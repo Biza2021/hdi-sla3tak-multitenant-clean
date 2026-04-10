@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.Locale;
@@ -67,7 +68,8 @@ public class RepairItemController {
             Authentication authentication,
             @Valid @ModelAttribute("repairItemForm") RepairItemForm form,
             BindingResult bindingResult,
-            Model model
+            Model model,
+            RedirectAttributes redirectAttributes
     ) {
         AuthenticatedShopUser principal = CurrentUser.require(authentication);
         Shop shop = loadShop(shopSlug);
@@ -79,6 +81,7 @@ public class RepairItemController {
 
         try {
             Long repairId = repairService.create(principal.shopId(), principal.userId(), form);
+            redirectAttributes.addFlashAttribute("communicationPrompt", "tracking");
             return "redirect:/" + shopSlug + "/items/" + repairId;
         } catch (CustomerNotFoundException ex) {
             bindingResult.rejectValue("customerId", "repair.customer.invalid");
@@ -152,7 +155,8 @@ public class RepairItemController {
             Authentication authentication,
             @Valid @ModelAttribute("repairItemForm") RepairItemForm form,
             BindingResult bindingResult,
-            Model model
+            Model model,
+            RedirectAttributes redirectAttributes
     ) {
         AuthenticatedShopUser principal = CurrentUser.require(authentication);
         Shop shop = loadShop(shopSlug);
@@ -163,7 +167,10 @@ public class RepairItemController {
         }
 
         try {
-            repairService.update(principal.shopId(), principal.userId(), repairId, form);
+            boolean transitionedToReadyForPickup = repairService.update(principal.shopId(), principal.userId(), repairId, form);
+            if (transitionedToReadyForPickup) {
+                redirectAttributes.addFlashAttribute("communicationPrompt", "pickup");
+            }
             return "redirect:/" + shopSlug + "/items/" + repairId;
         } catch (CustomerNotFoundException ex) {
             bindingResult.rejectValue("customerId", "repair.customer.invalid");

@@ -252,7 +252,7 @@ public class RepairService {
     }
 
     @Transactional
-    public void update(Long shopId, Long userId, Long repairId, RepairItemForm form) {
+    public boolean update(Long shopId, Long userId, Long repairId, RepairItemForm form) {
         RepairItem item = repairItemRepository.findByIdAndShopId(repairId, shopId)
                 .orElseThrow(() -> new RepairItemNotFoundException(repairId));
 
@@ -264,6 +264,9 @@ public class RepairService {
         if (previousStatus != item.getStatus()) {
             createHistoryEntry(item, resolveActor(shopId, userId), item.getStatus());
         }
+
+        return previousStatus != RepairItemStatus.READY_FOR_PICKUP
+                && item.getStatus() == RepairItemStatus.READY_FOR_PICKUP;
     }
 
     @Transactional

@@ -81,69 +81,15 @@
                    target="_blank"
                    rel="noopener"
                    th:text="#{repairs.detail.tracking.open}"></a>
-            </div>
-        </article>
-
-        <article class="detail-card">
-            <span class="section-kicker" th:text="#{communication.section.eyebrow}"></span>
-            <div class="communication-stack">
-                <section class="communication-block">
-                    <div class="communication-block__header">
-                        <strong class="communication-block__title" th:text="#{communication.tracking.title}"></strong>
-                        <span class="communication-target" th:if="${trackingLinks != null and trackingLinks.targetPhone != null}">
-                            <span th:text="#{communication.targetPhone}"></span>
-                            <strong th:text="${trackingLinks.targetPhone}"></strong>
-                        </span>
-                    </div>
-                    <div class="communication-actions" th:if="${trackingLinks != null and trackingLinks.hasAnyLink()}">
-                        <a class="button button--whatsapp"
-                           th:if="${trackingLinks.hasWhatsApp()}"
-                           th:href="${trackingLinks.whatsappUrl}"
-                           target="_blank"
-                           rel="noopener"
-                           th:text="#{communication.channel.whatsapp}"></a>
-                        <a class="button button--sms"
-                           th:if="${trackingLinks.hasSms()}"
-                           th:href="${trackingLinks.smsUrl}"
-                           th:text="#{communication.channel.sms}"></a>
-                    </div>
-                    <div class="communication-actions" th:if="${trackingLinks == null or !trackingLinks.hasAnyLink()}">
-                        <span class="button button--disabled" th:text="#{communication.channel.whatsapp}"></span>
-                        <span class="button button--disabled" th:text="#{communication.channel.sms}"></span>
-                    </div>
-                    <p class="communication-unavailable"
-                       th:if="${trackingLinks == null or !trackingLinks.hasAnyLink()}"
-                       th:text="#{communication.phoneUnavailable}"></p>
-                </section>
-
-                <section class="communication-block" th:if="${pickupLinks != null}">
-                    <div class="communication-block__header">
-                        <strong class="communication-block__title" th:text="#{communication.pickup.title}"></strong>
-                        <span class="communication-target" th:if="${pickupLinks.targetPhone != null}">
-                            <span th:text="#{communication.targetPhone}"></span>
-                            <strong th:text="${pickupLinks.targetPhone}"></strong>
-                        </span>
-                    </div>
-                    <div class="communication-actions" th:if="${pickupLinks.hasAnyLink()}">
-                        <a class="button button--whatsapp"
-                           th:if="${pickupLinks.hasWhatsApp()}"
-                           th:href="${pickupLinks.whatsappUrl}"
-                           target="_blank"
-                           rel="noopener"
-                           th:text="#{communication.channel.whatsapp}"></a>
-                        <a class="button button--sms"
-                           th:if="${pickupLinks.hasSms()}"
-                           th:href="${pickupLinks.smsUrl}"
-                           th:text="#{communication.channel.sms}"></a>
-                    </div>
-                    <div class="communication-actions" th:if="${!pickupLinks.hasAnyLink()}">
-                        <span class="button button--disabled" th:text="#{communication.channel.whatsapp}"></span>
-                        <span class="button button--disabled" th:text="#{communication.channel.sms}"></span>
-                    </div>
-                    <p class="communication-unavailable"
-                       th:if="${!pickupLinks.hasAnyLink()}"
-                       th:text="#{communication.phoneUnavailable}"></p>
-                </section>
+                <button class="button button--ghost button--compact"
+                        type="button"
+                        data-communication-open="tracking"
+                        th:text="#{communication.open.tracking}"></button>
+                <button class="button button--ghost button--compact"
+                        type="button"
+                        data-communication-open="pickup"
+                        th:if="${pickupLinks != null}"
+                        th:text="#{communication.open.pickup}"></button>
             </div>
         </article>
 
@@ -186,5 +132,160 @@
 
     <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
+
+<div class="modal-backdrop"
+     hidden
+     data-communication-modal
+     aria-hidden="true"
+     th:attr="
+        data-auto-open=${communicationPrompt},
+        data-tracking-title=#{communication.prompt.tracking.title},
+        data-tracking-body=#{communication.prompt.tracking.body},
+        data-tracking-phone=${trackingLinks != null ? trackingLinks.targetPhone : ''},
+        data-tracking-whatsapp=${trackingLinks != null ? trackingLinks.whatsappUrl : ''},
+        data-tracking-sms=${trackingLinks != null ? trackingLinks.smsUrl : ''},
+        data-pickup-title=#{communication.prompt.pickup.title},
+        data-pickup-body=#{communication.prompt.pickup.body},
+        data-pickup-phone=${pickupLinks != null ? pickupLinks.targetPhone : ''},
+        data-pickup-whatsapp=${pickupLinks != null ? pickupLinks.whatsappUrl : ''},
+        data-pickup-sms=${pickupLinks != null ? pickupLinks.smsUrl : ''},
+        data-whatsapp-label=#{communication.channel.whatsapp},
+        data-sms-label=#{communication.channel.sms},
+        data-cancel-label=#{common.cancel},
+        data-target-label=#{communication.targetPhone},
+        data-unavailable-label=#{communication.prompt.unavailable}">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="communication-modal-title">
+        <div class="modal-card__header">
+            <div class="section-card__copy">
+                <span class="section-kicker" th:text="#{communication.section.eyebrow}"></span>
+                <h2 id="communication-modal-title"></h2>
+            </div>
+        </div>
+        <p class="modal-card__body" data-communication-body></p>
+        <p class="communication-target" hidden data-communication-phone-row>
+            <span data-communication-target-label></span>
+            <strong data-communication-phone></strong>
+        </p>
+        <p class="communication-unavailable" hidden data-communication-unavailable></p>
+        <div class="modal-card__actions">
+            <a class="button button--whatsapp" target="_blank" rel="noopener" data-communication-whatsapp></a>
+            <a class="button button--sms" data-communication-sms></a>
+            <button class="button button--ghost" type="button" data-communication-close></button>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    (() => {
+        const modal = document.querySelector('[data-communication-modal]');
+        if (!modal) {
+            return;
+        }
+
+        const title = modal.querySelector('#communication-modal-title');
+        const body = modal.querySelector('[data-communication-body]');
+        const phoneRow = modal.querySelector('[data-communication-phone-row]');
+        const targetLabel = modal.querySelector('[data-communication-target-label]');
+        const phone = modal.querySelector('[data-communication-phone]');
+        const unavailable = modal.querySelector('[data-communication-unavailable]');
+        const whatsapp = modal.querySelector('[data-communication-whatsapp]');
+        const sms = modal.querySelector('[data-communication-sms]');
+        const closeButton = modal.querySelector('[data-communication-close]');
+        const triggers = document.querySelectorAll('[data-communication-open]');
+        const configs = {
+            tracking: {
+                title: modal.dataset.trackingTitle,
+                body: modal.dataset.trackingBody,
+                phone: modal.dataset.trackingPhone,
+                whatsappUrl: modal.dataset.trackingWhatsapp,
+                smsUrl: modal.dataset.trackingSms
+            },
+            pickup: {
+                title: modal.dataset.pickupTitle,
+                body: modal.dataset.pickupBody,
+                phone: modal.dataset.pickupPhone,
+                whatsappUrl: modal.dataset.pickupWhatsapp,
+                smsUrl: modal.dataset.pickupSms
+            }
+        };
+
+        const setAction = (link, label, url) => {
+            link.textContent = label;
+            if (url) {
+                link.href = url;
+                link.classList.remove('button--disabled');
+                link.removeAttribute('aria-disabled');
+                link.tabIndex = 0;
+            } else {
+                link.removeAttribute('href');
+                link.classList.add('button--disabled');
+                link.setAttribute('aria-disabled', 'true');
+                link.tabIndex = -1;
+            }
+        };
+
+        const openModal = (kind) => {
+            const config = configs[kind];
+            if (!config) {
+                return;
+            }
+
+            title.textContent = config.title || '';
+            body.textContent = config.body || '';
+            targetLabel.textContent = modal.dataset.targetLabel || '';
+            phone.textContent = config.phone || '';
+            phoneRow.hidden = !config.phone;
+            unavailable.textContent = modal.dataset.unavailableLabel || '';
+            unavailable.hidden = Boolean(config.whatsappUrl || config.smsUrl);
+            setAction(whatsapp, modal.dataset.whatsappLabel || 'WhatsApp', config.whatsappUrl);
+            setAction(sms, modal.dataset.smsLabel || 'SMS', config.smsUrl);
+            closeButton.textContent = modal.dataset.cancelLabel || 'Cancel';
+            modal.removeAttribute('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('modal-open');
+        };
+
+        const closeModal = () => {
+            modal.setAttribute('hidden', 'hidden');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+        };
+
+        const handleCloseInteraction = (event) => {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            closeModal();
+        };
+
+        triggers.forEach((trigger) => {
+            trigger.addEventListener('click', () => {
+                openModal(trigger.dataset.communicationOpen);
+            });
+        });
+
+        closeButton.addEventListener('click', handleCloseInteraction);
+        whatsapp.addEventListener('click', closeModal);
+        sms.addEventListener('click', closeModal);
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                handleCloseInteraction(event);
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !modal.hasAttribute('hidden')) {
+                handleCloseInteraction(event);
+            }
+        });
+
+        if (modal.dataset.autoOpen) {
+            const autoOpenKind = modal.dataset.autoOpen;
+            modal.dataset.autoOpen = '';
+            openModal(autoOpenKind);
+        }
+    })();
+</script>
 </body>
 </html>

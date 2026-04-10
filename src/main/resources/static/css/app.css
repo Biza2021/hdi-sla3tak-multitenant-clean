@@ -1127,6 +1127,69 @@ html[dir="rtl"] .side-note-card h2 {
     line-height: 1.6;
 }
 
+.modal-open {
+    overflow: hidden;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 1.2rem;
+    background: rgba(23, 32, 45, 0.38);
+    backdrop-filter: blur(10px);
+}
+
+.modal-backdrop[hidden] {
+    display: none !important;
+}
+
+.modal-card {
+    width: min(100%, 31rem);
+    display: grid;
+    gap: 0.95rem;
+    padding: 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-card h2 {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: clamp(1.35rem, 2vw, 1.65rem);
+    font-weight: 400;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+}
+
+html[dir="rtl"] .modal-card h2 {
+    font-family: "Cairo", "Segoe UI", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.modal-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.modal-card__body {
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+.modal-card__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
 .detail-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1383,7 +1446,8 @@ html[dir="rtl"] .side-note-card h2 {
 
     .entity-row__actions .button,
     .empty-state__actions .button,
-    .communication-actions .button {
+    .communication-actions .button,
+    .modal-card__actions .button {
         flex: 1 1 100%;
     }
 
