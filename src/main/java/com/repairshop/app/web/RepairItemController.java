@@ -1,6 +1,7 @@
 package com.repairshop.app.web;
 
 import com.repairshop.app.customer.CustomerNotFoundException;
+import com.repairshop.app.media.InvalidRepairImageException;
 import com.repairshop.app.repair.RepairItemStatus;
 import com.repairshop.app.repair.RepairService;
 import com.repairshop.app.security.AuthenticatedShopUser;
@@ -69,6 +70,8 @@ public class RepairItemController {
             return "redirect:/" + shopSlug + "/items/" + repairId;
         } catch (CustomerNotFoundException ex) {
             bindingResult.rejectValue("customerId", "repair.customer.invalid");
+        } catch (InvalidRepairImageException ex) {
+            bindingResult.rejectValue("imageFile", ex.getMessageCode());
         }
 
         model.addAttribute("shop", shop);
@@ -127,6 +130,8 @@ public class RepairItemController {
             return "redirect:/" + shopSlug + "/items/" + repairId;
         } catch (CustomerNotFoundException ex) {
             bindingResult.rejectValue("customerId", "repair.customer.invalid");
+        } catch (InvalidRepairImageException ex) {
+            bindingResult.rejectValue("imageFile", ex.getMessageCode());
         }
 
         model.addAttribute("shop", shop);
@@ -144,6 +149,9 @@ public class RepairItemController {
         model.addAttribute("customerOptions", repairService.listCustomerOptions(shopId));
         model.addAttribute("repairStatuses", RepairItemStatus.values());
         model.addAttribute("repairId", repairId);
+        model.addAttribute("existingImage", repairId != null
+                ? repairService.findImageSummary(shopId, repairId).orElse(null)
+                : null);
     }
 
     private Shop loadShop(String shopSlug) {

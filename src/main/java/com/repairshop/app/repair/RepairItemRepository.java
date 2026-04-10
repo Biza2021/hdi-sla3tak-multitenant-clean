@@ -61,5 +61,13 @@ public interface RepairItemRepository extends JpaRepository<RepairItem, Long> {
     Optional<RepairItem> findByIdAndShopId(Long id, Long shopId);
 
     Optional<RepairItem> findByPublicTrackingToken(String publicTrackingToken);
+
+    @Query("""
+            select r
+            from RepairItem r
+            join fetch r.shop s
+            where r.publicTrackingToken = :token
+            """)
+    Optional<RepairItem> findByPublicTrackingTokenWithShop(@Param("token") String token);
 }
 

@@ -3,6 +3,8 @@ package com.repairshop.app.repair;
 import com.repairshop.app.customer.Customer;
 import com.repairshop.app.customer.CustomerNotFoundException;
 import com.repairshop.app.customer.CustomerRepository;
+import com.repairshop.app.media.RepairImageStorageService;
+import com.repairshop.app.media.RepairImageSummaryView;
 import com.repairshop.app.shop.ShopRepository;
 import com.repairshop.app.user.ShopUser;
 import com.repairshop.app.user.ShopUserRepository;
@@ -24,6 +26,7 @@ public class RepairService {
     private final RepairItemRepository repairItemRepository;
     private final RepairStatusHistoryRepository repairStatusHistoryRepository;
     private final CustomerRepository customerRepository;
+    private final RepairImageStorageService repairImageStorageService;
     private final ShopRepository shopRepository;
     private final ShopUserRepository shopUserRepository;
 
@@ -31,12 +34,14 @@ public class RepairService {
             RepairItemRepository repairItemRepository,
             RepairStatusHistoryRepository repairStatusHistoryRepository,
             CustomerRepository customerRepository,
+            RepairImageStorageService repairImageStorageService,
             ShopRepository shopRepository,
             ShopUserRepository shopUserRepository
     ) {
         this.repairItemRepository = repairItemRepository;
         this.repairStatusHistoryRepository = repairStatusHistoryRepository;
         this.customerRepository = customerRepository;
+        this.repairImageStorageService = repairImageStorageService;
         this.shopRepository = shopRepository;
         this.shopUserRepository = shopUserRepository;
     }
@@ -70,6 +75,7 @@ public class RepairService {
     @Transactional(readOnly = true)
     public RepairDetailView getDetail(Long shopId, Long repairId) {
         RepairItem item = getDetailedRepair(shopId, repairId);
+        RepairImageSummaryView image = repairImageStorageService.findSummary(shopId, repairId).orElse(null);
         List<RepairHistoryEntryView> history = repairStatusHistoryRepository.findTimelineByRepairItemIdAndShopId(repairId, shopId)
                 .stream()
                 .map(entry -> new RepairHistoryEntryView(
@@ -92,6 +98,7 @@ public class RepairService {
                 item.getRemainingBalance(),
                 item.getPickupCode(),
                 item.getPublicTrackingToken(),
+                image,
                 new CustomerOptionView(
                         item.getCustomer().getId(),
                         item.getCustomer().getFullName(),
@@ -117,6 +124,26 @@ public class RepairService {
         return form;
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Optional<RepairImageSummaryView> findImageSummary(Long shopId, Long repairId) {
+        return repairImageStorageService.findSummary(shopId, repairId);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<PublicTrackingView> findPublicTracking(String token) {
+        if (token == null || token.isBlank()) {
+            return java.util.Optional.empty();
+        }
+
+        return repairItemRepository.findByPublicTrackingTokenWithShop(token)
+                .map(item -> new PublicTrackingView(
+                        item.getShop().getBusinessName(),
+                        item.getTitle(),
+                        item.getStatus(),
+                        item.getExpectedDeliveryDate()
+                ));
+    }
+
     @Transactional
     public Long create(Long shopId, Long userId, RepairItemForm form) {
         RepairItem item = new RepairItem();
@@ -125,6 +152,7 @@ public class RepairService {
         item.setPickupCode(generatePickupCode(shopId));
         applyForm(item, shopId, form);
         RepairItem saved = repairItemRepository.save(item);
+        repairImageStorageService.storeForRepair(saved, form.getImageFile());
         createHistoryEntry(saved, resolveActor(shopId, userId), saved.getStatus());
         return saved.getId();
     }
@@ -137,6 +165,7 @@ public class RepairService {
         RepairItemStatus previousStatus = item.getStatus();
         applyForm(item, shopId, form);
         repairItemRepository.save(item);
+        repairImageStorageService.storeForRepair(item, form.getImageFile());
 
         if (previousStatus != item.getStatus()) {
             createHistoryEntry(item, resolveActor(shopId, userId), item.getStatus());

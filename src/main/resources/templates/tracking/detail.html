@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.publicTracking})}"></head>
+<body class="auth-page">
+<main class="auth-shell auth-shell--single auth-shell--compact public-shell">
+    <div th:replace="~{fragments/ui :: languageSwitcher(${currentPath})}"></div>
+
+    <section class="hero-panel hero-panel--intro public-panel">
+        <div class="panel-topline">
+            <span class="eyebrow" th:text="#{tracking.detail.eyebrow}"></span>
+            <span class="context-chip" th:text="${tracking.shopBusinessName}"></span>
+        </div>
+
+        <div class="hero-copy">
+            <h1 th:text="${tracking.title}"></h1>
+            <p class="lede" th:text="#{tracking.detail.lede(${tracking.shopBusinessName})}"></p>
+        </div>
+
+        <div class="info-grid public-info-grid">
+            <div class="info-item">
+                <span th:text="#{tracking.detail.shop}"></span>
+                <strong th:text="${tracking.shopBusinessName}"></strong>
+            </div>
+            <div class="info-item">
+                <span th:text="#{tracking.detail.status}"></span>
+                <strong class="status-badge"
+                        th:classappend="| status--${tracking.status.name()}|"
+                        th:text="${#messages.msg('repair.status.' + tracking.status.name())}"></strong>
+            </div>
+            <div class="info-item">
+                <span th:text="#{tracking.detail.expectedDeliveryDate}"></span>
+                <strong th:text="${tracking.expectedDeliveryDate != null ? #temporals.format(tracking.expectedDeliveryDate, #messages.msg('format.date')) : #messages.msg('app.notAvailable')}"></strong>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>

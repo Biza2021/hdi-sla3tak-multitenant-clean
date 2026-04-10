@@ -61,6 +61,41 @@
         </article>
 
         <article class="detail-card">
+            <span class="section-kicker" th:text="#{repairs.detail.image.title}"></span>
+            <div class="repair-image-panel" th:if="${repair.image != null}">
+                <img class="repair-image"
+                     th:src="@{|/${shop.slug}/items/${repair.id}/image|}"
+                     th:alt="${repair.title}">
+                <div class="entity-row__meta">
+                    <div class="meta-pill">
+                        <span th:text="#{repairs.detail.image.filename}"></span>
+                        <strong th:text="${repair.image.originalFilename}"></strong>
+                    </div>
+                    <div class="meta-pill">
+                        <span th:text="#{repairs.detail.image.fileSize}"></span>
+                        <strong th:text="${repair.image.fileSizeLabel}"></strong>
+                    </div>
+                </div>
+            </div>
+            <div class="empty-state" th:if="${repair.image == null}">
+                <h3 th:text="#{repairs.detail.image.empty.title}"></h3>
+                <p th:text="#{repairs.detail.image.empty.body}"></p>
+            </div>
+        </article>
+
+        <article class="detail-card">
+            <span class="section-kicker" th:text="#{repairs.detail.tracking.title}"></span>
+            <p th:text="#{repairs.detail.tracking.body}"></p>
+            <div class="page-hero__actions">
+                <a class="button button--ghost"
+                   th:href="@{|/track/${repair.publicTrackingToken}|}"
+                   target="_blank"
+                   rel="noopener"
+                   th:text="#{repairs.detail.tracking.open}"></a>
+            </div>
+        </article>
+
+        <article class="detail-card">
             <span class="section-kicker" th:text="#{repairs.field.description}"></span>
             <p th:text="${repair.description != null ? repair.description : #messages.msg('repairs.detail.description.empty')}"></p>
         </article>

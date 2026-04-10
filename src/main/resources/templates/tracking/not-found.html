@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.publicTracking})}"></head>
+<body class="auth-page">
+<main class="auth-shell auth-shell--single auth-shell--compact public-shell">
+    <div th:replace="~{fragments/ui :: languageSwitcher(${currentPath})}"></div>
+
+    <section class="auth-card auth-card--login">
+        <div class="panel-topline">
+            <span class="eyebrow" th:text="#{tracking.notFound.eyebrow}"></span>
+            <span class="context-chip" th:text="#{app.brand}"></span>
+        </div>
+
+        <div class="card-heading">
+            <h1 th:text="#{tracking.notFound.title}"></h1>
+            <p class="muted-copy" th:text="#{tracking.notFound.body}"></p>
+        </div>
+    </section>
+</main>
+</body>
+</html>

@@ -361,6 +361,12 @@ html[dir="rtl"] .field select {
     box-shadow: 0 0 0 4px rgba(13, 110, 105, 0.1);
 }
 
+.field--file input[type="file"] {
+    min-height: auto;
+    padding: 0.78rem;
+    background: rgba(255, 255, 255, 0.92);
+}
+
 .field small {
     color: var(--danger);
     font-size: 0.84rem;
@@ -791,6 +797,22 @@ html[dir="rtl"] .side-note-card h2 {
     background: var(--panel-soft);
 }
 
+.upload-preview,
+.repair-image-panel {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.repair-image {
+    display: block;
+    width: 100%;
+    max-height: 22rem;
+    object-fit: cover;
+    border: 1px solid rgba(26, 36, 52, 0.08);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
 .readonly-token {
     display: flex;
     align-items: center;
@@ -890,6 +912,20 @@ html[dir="rtl"] .side-note-card h2 {
     color: var(--danger);
 }
 
+.public-shell {
+    width: min(100%, 38rem);
+}
+
+.public-panel h1 {
+    max-width: none;
+    font-size: clamp(1.85rem, 4.2vw, 2.45rem);
+    line-height: 1.08;
+}
+
+.public-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 @media (max-width: 980px) {
     .auth-shell {
         grid-template-columns: 1fr;
@@ -909,7 +945,8 @@ html[dir="rtl"] .side-note-card h2 {
     .form-layout,
     .detail-grid,
     .info-grid,
-    .form-grid {
+    .form-grid,
+    .public-info-grid {
         grid-template-columns: 1fr;
     }
 

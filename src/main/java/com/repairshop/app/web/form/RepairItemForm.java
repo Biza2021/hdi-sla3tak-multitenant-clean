@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -46,6 +47,8 @@ public class RepairItemForm {
     @DecimalMin(value = "0.00", message = "{repair.money.min}")
     @Digits(integer = 10, fraction = 2, message = "{repair.money.digits}")
     private BigDecimal remainingBalance = BigDecimal.ZERO;
+
+    private MultipartFile imageFile;
 
     public Long getCustomerId() {
         return customerId;
@@ -117,5 +120,13 @@ public class RepairItemForm {
 
     public void setRemainingBalance(BigDecimal remainingBalance) {
         this.remainingBalance = remainingBalance;
+    }
+
+    public MultipartFile getImageFile() {
+        return imageFile;
+    }
+
+    public void setImageFile(MultipartFile imageFile) {
+        this.imageFile = imageFile;
     }
 }
