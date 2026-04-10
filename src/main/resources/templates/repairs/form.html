@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(${editing} ? #{page.title.repairEdit} : #{page.title.repairNew})}"></head>
+<body class="dashboard-page">
+<main class="page-shell">
+    <div th:replace="~{fragments/ui :: tenantHeader(${shop}, 'items')}"></div>
+
+    <section class="page-hero">
+        <div class="page-hero__copy">
+            <span class="section-kicker" th:text="#{repairs.form.eyebrow}"></span>
+            <h1 th:text="${editing} ? #{repairs.form.edit.title} : #{repairs.form.new.title}"></h1>
+            <p class="muted-copy" th:text="${editing} ? #{repairs.form.edit.subtitle} : #{repairs.form.new.subtitle}"></p>
+        </div>
+    </section>
+
+    <div class="empty-state" th:if="${customerOptions.isEmpty()}">
+        <h3 th:text="#{repairs.form.customersRequired.title}"></h3>
+        <p th:text="#{repairs.form.customersRequired.body}"></p>
+        <a class="button button--primary" th:href="@{|/${shop.slug}/customers/new|}" th:text="#{repairs.form.customersRequired.cta}"></a>
+    </div>
+
+    <section class="form-layout" th:if="${!customerOptions.isEmpty()}">
+        <section class="section-card section-card--form">
+            <form th:action="${editing}
+                    ? @{/{shopSlug}/items/{repairId}/edit(shopSlug=${shop.slug}, repairId=${repairId})}
+                    : @{/{shopSlug}/items/new(shopSlug=${shop.slug})}"
+                  th:object="${repairItemForm}"
+                  method="post"
+                  class="stack">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <div class="form-grid">
+                    <label class="field">
+                        <span th:text="#{repairs.field.customer}"></span>
+                        <select th:field="*{customerId}">
+                            <option value="" th:text="#{repairs.form.customer.placeholder}"></option>
+                            <option th:each="customerOption : ${customerOptions}"
+                                    th:value="${customerOption.id}"
+                                    th:text="${customerOption.primaryPhone != null ? customerOption.fullName + ' - ' + customerOption.primaryPhone : customerOption.fullName}"></option>
+                        </select>
+                        <small th:if="${#fields.hasErrors('customerId')}" th:errors="*{customerId}"></small>
+                    </label>
+
+                    <label class="field">
+                        <span th:text="#{repairs.field.status}"></span>
+                        <select th:field="*{status}">
+                            <option th:each="status : ${repairStatuses}"
+                                    th:value="${status}"
+                                    th:text="${#messages.msg('repair.status.' + status.name())}"></option>
+                        </select>
+                        <small th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></small>
+                    </label>
+
+                    <label class="field field--full">
+                        <span th:text="#{repairs.field.title}"></span>
+                        <input type="text" th:field="*{title}" th:placeholder="#{repairs.placeholder.title}">
+                        <small th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></small>
+                    </label>
+
+                    <label class="field field--full">
+                        <span th:text="#{repairs.field.description}"></span>
+                        <textarea th:field="*{description}" rows="4" th:placeholder="#{repairs.placeholder.description}"></textarea>
+                        <small th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></small>
+                    </label>
+
+                    <label class="field field--full">
+                        <span th:text="#{repairs.field.repairNotes}"></span>
+                        <textarea th:field="*{repairNotes}" rows="5" th:placeholder="#{repairs.placeholder.repairNotes}"></textarea>
+                        <small th:if="${#fields.hasErrors('repairNotes')}" th:errors="*{repairNotes}"></small>
+                    </label>
+
+                    <label class="field">
+                        <span th:text="#{repairs.field.expectedDeliveryDate}"></span>
+                        <input type="date" th:field="*{expectedDeliveryDate}">
+                        <small th:if="${#fields.hasErrors('expectedDeliveryDate')}" th:errors="*{expectedDeliveryDate}"></small>
+                    </label>
+
+                    <label class="field">
+                        <span th:text="#{repairs.field.estimatedPrice}"></span>
+                        <input type="number" inputmode="decimal" min="0" step="0.01" th:field="*{estimatedPrice}" th:placeholder="#{repairs.placeholder.money}">
+                        <small th:if="${#fields.hasErrors('estimatedPrice')}" th:errors="*{estimatedPrice}"></small>
+                    </label>
+
+                    <label class="field">
+                        <span th:text="#{repairs.field.depositPaid}"></span>
+                        <input type="number" inputmode="decimal" min="0" step="0.01" th:field="*{depositPaid}" th:placeholder="#{repairs.placeholder.money}">
+                        <small th:if="${#fields.hasErrors('depositPaid')}" th:errors="*{depositPaid}"></small>
+                    </label>
+
+                    <label class="field">
+                        <span th:text="#{repairs.field.remainingBalance}"></span>
+                        <input type="number" inputmode="decimal" min="0" step="0.01" th:field="*{remainingBalance}" th:placeholder="#{repairs.placeholder.money}">
+                        <small th:if="${#fields.hasErrors('remainingBalance')}" th:errors="*{remainingBalance}"></small>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <a class="button button--ghost"
+                       th:href="${editing}
+                                ? @{/{shopSlug}/items/{repairId}(shopSlug=${shop.slug}, repairId=${repairId})}
+                                : @{/{shopSlug}/items(shopSlug=${shop.slug})}"
+                       th:text="#{common.cancel}"></a>
+                    <button class="button button--primary"
+                            type="submit"
+                            th:text="${editing} ? #{repairs.form.edit.submit} : #{repairs.form.new.submit}"></button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="side-note-card">
+            <span class="section-kicker" th:text="#{repairs.form.help.eyebrow}"></span>
+            <h2 th:text="#{repairs.form.help.title}"></h2>
+            <p th:text="#{repairs.form.help.body}"></p>
+        </aside>
+    </section>
+</main>
+</body>
+</html>

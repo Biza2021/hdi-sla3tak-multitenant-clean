@@ -26,5 +26,40 @@
         </form>
     </div>
 </div>
+<div th:fragment="tenantHeader(shop, activeSection)" class="tenant-header-shell">
+    <header class="tenant-header">
+        <div class="tenant-header__brand">
+            <div class="panel-topline">
+                <span class="eyebrow" th:text="#{app.brand}"></span>
+                <span class="context-chip" th:text="|/${shop.slug}|"></span>
+            </div>
+            <div class="tenant-header__copy">
+                <strong th:text="${shop.businessName}"></strong>
+                <span th:text="#{tenant.header.subtitle}"></span>
+            </div>
+        </div>
+        <div class="tenant-header__actions">
+            <div th:replace="~{fragments/ui :: languageSwitcher(${currentPath})}"></div>
+            <form th:action="@{|/${shop.slug}/logout|}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="button button--ghost" th:text="#{dashboard.logout}"></button>
+            </form>
+        </div>
+    </header>
+    <nav class="tenant-nav" th:attr="aria-label=#{tenant.nav.aria}">
+        <a class="tenant-nav__link"
+           th:href="@{|/${shop.slug}/dashboard|}"
+           th:classappend="${activeSection == 'dashboard'} ? ' is-active' : ''"
+           th:text="#{tenant.nav.dashboard}"></a>
+        <a class="tenant-nav__link"
+           th:href="@{|/${shop.slug}/customers|}"
+           th:classappend="${activeSection == 'customers'} ? ' is-active' : ''"
+           th:text="#{tenant.nav.customers}"></a>
+        <a class="tenant-nav__link"
+           th:href="@{|/${shop.slug}/items|}"
+           th:classappend="${activeSection == 'items'} ? ' is-active' : ''"
+           th:text="#{tenant.nav.repairs}"></a>
+    </nav>
+</div>
 </body>
 </html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.customers})}"></head>
+<body class="dashboard-page">
+<main class="page-shell">
+    <div th:replace="~{fragments/ui :: tenantHeader(${shop}, 'customers')}"></div>
+
+    <section class="page-hero">
+        <div class="page-hero__copy">
+            <span class="section-kicker" th:text="#{customers.list.eyebrow}"></span>
+            <h1 th:text="#{customers.list.title}"></h1>
+            <p class="muted-copy" th:text="#{customers.list.subtitle}"></p>
+        </div>
+        <div class="page-hero__actions">
+            <a class="button button--primary" th:href="@{|/${shop.slug}/customers/new|}" th:text="#{customers.list.cta}"></a>
+        </div>
+    </section>
+
+    <div class="notice success" th:if="${param.created != null}">
+        <span th:text="#{customers.list.created}"></span>
+    </div>
+
+    <section class="section-card">
+        <div class="empty-state" th:if="${customers.isEmpty()}">
+            <h3 th:text="#{customers.list.empty.title}"></h3>
+            <p th:text="#{customers.list.empty.body}"></p>
+            <a class="button button--primary" th:href="@{|/${shop.slug}/customers/new|}" th:text="#{customers.list.cta}"></a>
+        </div>
+
+        <div class="entity-list" th:if="${!customers.isEmpty()}">
+            <article class="entity-row" th:each="customer : ${customers}">
+                <div class="entity-row__main">
+                    <div class="entity-row__title-group">
+                        <a class="entity-row__title"
+                           th:href="@{|/${shop.slug}/customers/${customer.id}|}"
+                           th:text="${customer.fullName}"></a>
+                        <p class="entity-row__subtitle"
+                           th:text="${customer.primaryPhone != null ? customer.primaryPhone : #messages.msg('app.notAvailable')}"></p>
+                    </div>
+                    <div class="entity-row__actions">
+                        <a class="button button--ghost"
+                           th:href="@{|/${shop.slug}/customers/${customer.id}|}"
+                           th:text="#{common.view}"></a>
+                        <a class="button button--ghost"
+                           th:href="@{|/${shop.slug}/customers/${customer.id}/edit|}"
+                           th:text="#{common.edit}"></a>
+                    </div>
+                </div>
+                <div class="entity-row__meta">
+                    <div class="meta-pill">
+                        <span th:text="#{customers.field.primaryPhone}"></span>
+                        <strong th:text="${customer.primaryPhone != null ? customer.primaryPhone : #messages.msg('app.notAvailable')}"></strong>
+                    </div>
+                    <div class="meta-pill">
+                        <span th:text="#{customers.field.secondaryPhone}"></span>
+                        <strong th:text="${customer.secondaryPhone != null ? customer.secondaryPhone : #messages.msg('app.notAvailable')}"></strong>
+                    </div>
+                    <div class="meta-pill meta-pill--wide">
+                        <span th:text="#{customers.field.notes}"></span>
+                        <strong th:text="${customer.notes != null ? customer.notes : #messages.msg('app.notAvailable')}"></strong>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+</body>
+</html>

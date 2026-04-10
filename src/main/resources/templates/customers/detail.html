@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.customerDetail})}"></head>
+<body class="dashboard-page">
+<main class="page-shell">
+    <div th:replace="~{fragments/ui :: tenantHeader(${shop}, 'customers')}"></div>
+
+    <section class="page-hero">
+        <div class="page-hero__copy">
+            <span class="section-kicker" th:text="#{customers.detail.eyebrow}"></span>
+            <h1 th:text="${customer.fullName}"></h1>
+            <p class="muted-copy" th:text="#{customers.detail.subtitle}"></p>
+        </div>
+        <div class="page-hero__actions">
+            <a class="button button--ghost" th:href="@{|/${shop.slug}/customers|}" th:text="#{common.backToList}"></a>
+            <a class="button button--primary" th:href="@{|/${shop.slug}/customers/${customer.id}/edit|}" th:text="#{common.edit}"></a>
+        </div>
+    </section>
+
+    <section class="detail-grid">
+        <article class="detail-card">
+            <span class="section-kicker" th:text="#{customers.detail.contact.title}"></span>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span th:text="#{customers.field.primaryPhone}"></span>
+                    <strong th:text="${customer.primaryPhone != null ? customer.primaryPhone : #messages.msg('app.notAvailable')}"></strong>
+                </div>
+                <div class="info-item">
+                    <span th:text="#{customers.field.secondaryPhone}"></span>
+                    <strong th:text="${customer.secondaryPhone != null ? customer.secondaryPhone : #messages.msg('app.notAvailable')}"></strong>
+                </div>
+            </div>
+        </article>
+
+        <article class="detail-card">
+            <span class="section-kicker" th:text="#{customers.field.notes}"></span>
+            <p th:text="${customer.notes != null ? customer.notes : #messages.msg('customers.detail.notes.empty')}"></p>
+        </article>
+    </section>
+
+    <section class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__copy">
+                <span class="section-kicker" th:text="#{customers.detail.repairs.eyebrow}"></span>
+                <h2 th:text="#{customers.detail.repairs.title}"></h2>
+                <p class="muted-copy" th:text="#{customers.detail.repairs.subtitle}"></p>
+            </div>
+            <a class="button button--ghost" th:href="@{|/${shop.slug}/items|}" th:text="#{tenant.nav.repairs}"></a>
+        </div>
+
+        <div class="empty-state" th:if="${customer.repairs.isEmpty()}">
+            <h3 th:text="#{customers.detail.repairs.empty.title}"></h3>
+            <p th:text="#{customers.detail.repairs.empty.body}"></p>
+        </div>
+
+        <div class="entity-list" th:if="${!customer.repairs.isEmpty()}">
+            <article class="entity-row" th:each="repair : ${customer.repairs}">
+                <div class="entity-row__main">
+                    <div class="entity-row__title-group">
+                        <a class="entity-row__title"
+                           th:href="@{|/${shop.slug}/items/${repair.id}|}"
+                           th:text="${repair.title}"></a>
+                        <p class="entity-row__subtitle"
+                           th:text="${repair.expectedDeliveryDate != null ? #temporals.format(repair.expectedDeliveryDate, #messages.msg('format.date')) : #messages.msg('app.notAvailable')}"></p>
+                    </div>
+                    <span class="status-badge"
+                          th:classappend="| status--${repair.status.name()}|"
+                          th:text="${#messages.msg('repair.status.' + repair.status.name())}"></span>
+                </div>
+                <div class="entity-row__meta">
+                    <div class="meta-pill">
+                        <span th:text="#{repairs.field.remainingBalance}"></span>
+                        <strong th:text="${#numbers.formatDecimal(repair.remainingBalance, 1, 2)}"></strong>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+</body>
+</html>

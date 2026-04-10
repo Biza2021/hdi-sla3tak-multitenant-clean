@@ -2,47 +2,94 @@
 <html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
 <head th:replace="~{fragments/head :: appHead(#{page.title.dashboard})}"></head>
 <body class="dashboard-page">
-<main class="page-shell" th:with="roleLabel=${#messages.msg('user.role.' + currentUser.role.name())}">
-    <section class="dashboard-hero">
+<main class="page-shell">
+    <div th:replace="~{fragments/ui :: tenantHeader(${shop}, 'dashboard')}"></div>
+
+    <section class="dashboard-hero dashboard-hero--phase2">
         <div class="dashboard-hero__copy">
             <div class="panel-topline">
-                <span class="eyebrow" th:text="#{app.brand}"></span>
-                <span class="role-chip" th:text="${roleLabel}"></span>
+                <span class="eyebrow" th:text="#{dashboard.hero.eyebrow}"></span>
+                <span class="role-chip" th:text="${#messages.msg('user.role.' + currentUser.role.name())}"></span>
             </div>
-            <h1 th:text="${shop.businessName}"></h1>
-            <p class="muted-copy" th:text="#{dashboard.header.subtitle}"></p>
+            <h1 th:text="#{dashboard.hero.title}"></h1>
+            <p class="muted-copy" th:text="#{dashboard.hero.subtitle}"></p>
         </div>
         <div class="dashboard-hero__actions">
-            <div th:replace="~{fragments/ui :: languageSwitcher(${currentPath})}"></div>
-            <form th:action="@{|/${shop.slug}/logout|}" method="post">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <button type="submit" class="button button--ghost" th:text="#{dashboard.logout}"></button>
-            </form>
+            <a class="button button--ghost" th:href="@{|/${shop.slug}/customers|}" th:text="#{tenant.nav.customers}"></a>
+            <a class="button button--primary" th:href="@{|/${shop.slug}/items/new|}" th:text="#{dashboard.hero.cta}"></a>
         </div>
     </section>
 
     <section class="metric-grid">
         <article class="metric-card">
-            <span class="metric-label" th:text="#{dashboard.metric.tenantRouting.label}"></span>
-            <strong class="metric-value" th:text="${shop.slug}"></strong>
-            <p th:text="#{dashboard.metric.tenantRouting.body}"></p>
+            <span class="metric-label" th:text="#{dashboard.metric.totalCustomers.label}"></span>
+            <strong class="metric-value" th:text="${dashboard.totalCustomers}"></strong>
+            <p th:text="#{dashboard.metric.totalCustomers.body}"></p>
         </article>
         <article class="metric-card">
-            <span class="metric-label" th:text="#{dashboard.metric.accessModel.label}"></span>
-            <strong class="metric-value" th:text="${roleLabel}"></strong>
-            <p th:text="#{dashboard.metric.accessModel.body}"></p>
+            <span class="metric-label" th:text="#{dashboard.metric.activeRepairs.label}"></span>
+            <strong class="metric-value" th:text="${dashboard.activeRepairs}"></strong>
+            <p th:text="#{dashboard.metric.activeRepairs.body}"></p>
         </article>
         <article class="metric-card">
-            <span class="metric-label" th:text="#{dashboard.metric.phase2.label}"></span>
-            <strong class="metric-value" th:text="#{dashboard.metric.phase2.value}"></strong>
-            <p th:text="#{dashboard.metric.phase2.body}"></p>
+            <span class="metric-label" th:text="#{dashboard.metric.readyForPickup.label}"></span>
+            <strong class="metric-value" th:text="${dashboard.readyForPickup}"></strong>
+            <p th:text="#{dashboard.metric.readyForPickup.body}"></p>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label" th:text="#{dashboard.metric.deliveredRecently.label}"></span>
+            <strong class="metric-value" th:text="${dashboard.deliveredRecently}"></strong>
+            <p th:text="#{dashboard.metric.deliveredRecently.body}"></p>
         </article>
     </section>
 
-    <section class="placeholder-card placeholder-card--soft">
-        <h2 th:text="#{dashboard.live.title}"></h2>
-        <p th:with="onboardingRoute='/shops/new', loginRoute=|/${shop.slug}/login|"
-           th:text="#{dashboard.live.body(${onboardingRoute}, ${loginRoute})}"></p>
+    <section class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__copy">
+                <span class="section-kicker" th:text="#{dashboard.recent.eyebrow}"></span>
+                <h2 th:text="#{dashboard.recent.title}"></h2>
+                <p class="muted-copy" th:text="#{dashboard.recent.subtitle}"></p>
+            </div>
+            <a class="button button--ghost" th:href="@{|/${shop.slug}/items|}" th:text="#{dashboard.recent.viewAll}"></a>
+        </div>
+
+        <div class="empty-state" th:if="${dashboard.recentRepairs.isEmpty()}">
+            <h3 th:text="#{dashboard.recent.empty.title}"></h3>
+            <p th:text="#{dashboard.recent.empty.body}"></p>
+            <a class="button button--primary" th:href="@{|/${shop.slug}/items/new|}" th:text="#{dashboard.hero.cta}"></a>
+        </div>
+
+        <div class="entity-list" th:if="${!dashboard.recentRepairs.isEmpty()}">
+            <article class="entity-row" th:each="repair : ${dashboard.recentRepairs}">
+                <div class="entity-row__main">
+                    <div class="entity-row__title-group">
+                        <a class="entity-row__title"
+                           th:href="@{|/${shop.slug}/items/${repair.id}|}"
+                           th:text="${repair.title}"></a>
+                        <p class="entity-row__subtitle" th:text="${repair.customerName}"></p>
+                    </div>
+                    <span class="status-badge"
+                          th:classappend="| status--${repair.status.name()}|"
+                          th:text="${#messages.msg('repair.status.' + repair.status.name())}"></span>
+                </div>
+                <div class="entity-row__meta">
+                    <div class="meta-pill">
+                        <span th:text="#{dashboard.recent.expected}"></span>
+                        <strong th:if="${repair.expectedDeliveryDate != null}"
+                                th:text="${#temporals.format(repair.expectedDeliveryDate, #messages.msg('format.date'))}"></strong>
+                        <strong th:if="${repair.expectedDeliveryDate == null}" th:text="#{app.notAvailable}"></strong>
+                    </div>
+                    <div class="meta-pill">
+                        <span th:text="#{dashboard.recent.balance}"></span>
+                        <strong th:text="${#numbers.formatDecimal(repair.remainingBalance, 1, 2)}"></strong>
+                    </div>
+                    <div class="meta-pill">
+                        <span th:text="#{dashboard.recent.updated}"></span>
+                        <strong th:text="${#temporals.format(repair.updatedAt, #messages.msg('format.dateTime'))}"></strong>
+                    </div>
+                </div>
+            </article>
+        </div>
     </section>
 </main>
 </body>

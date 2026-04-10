@@ -37,7 +37,7 @@ public class LocalizationConfig implements WebMvcConfigurer {
     @Bean
     LocaleResolver localeResolver() {
         CookieLocaleResolver resolver = new CookieLocaleResolver();
-        resolver.setCookieName("benchpilot-lang");
+        resolver.setCookieName("hdi-sla3tak-lang");
         resolver.setDefaultLocale(Locale.FRENCH);
         resolver.setCookieMaxAge(Duration.ofDays(365));
         resolver.setCookiePath("/");

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(${editing} ? #{page.title.customerEdit} : #{page.title.customerNew})}"></head>
+<body class="dashboard-page">
+<main class="page-shell">
+    <div th:replace="~{fragments/ui :: tenantHeader(${shop}, 'customers')}"></div>
+
+    <section class="page-hero">
+        <div class="page-hero__copy">
+            <span class="section-kicker" th:text="#{customers.form.eyebrow}"></span>
+            <h1 th:text="${editing} ? #{customers.form.edit.title} : #{customers.form.new.title}"></h1>
+            <p class="muted-copy" th:text="${editing} ? #{customers.form.edit.subtitle} : #{customers.form.new.subtitle}"></p>
+        </div>
+    </section>
+
+    <section class="form-layout">
+        <section class="section-card section-card--form">
+            <form th:action="${editing}
+                    ? @{/{shopSlug}/customers/{customerId}/edit(shopSlug=${shop.slug}, customerId=${customerId})}
+                    : @{/{shopSlug}/customers/new(shopSlug=${shop.slug})}"
+                  th:object="${customerForm}"
+                  method="post"
+                  class="stack">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <div class="form-grid">
+                    <label class="field field--full">
+                        <span th:text="#{customers.field.fullName}"></span>
+                        <input type="text" th:field="*{fullName}" th:placeholder="#{customers.placeholder.fullName}">
+                        <small th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></small>
+                    </label>
+
+                    <label class="field">
+                        <span th:text="#{customers.field.primaryPhone}"></span>
+                        <input type="text" th:field="*{primaryPhone}" th:placeholder="#{customers.placeholder.primaryPhone}">
+                        <small th:if="${#fields.hasErrors('primaryPhone')}" th:errors="*{primaryPhone}"></small>
+                    </label>
+
+                    <label class="field">
+                        <span th:text="#{customers.field.secondaryPhone}"></span>
+                        <input type="text" th:field="*{secondaryPhone}" th:placeholder="#{customers.placeholder.secondaryPhone}">
+                        <small th:if="${#fields.hasErrors('secondaryPhone')}" th:errors="*{secondaryPhone}"></small>
+                    </label>
+
+                    <label class="field field--full">
+                        <span th:text="#{customers.field.notes}"></span>
+                        <textarea th:field="*{notes}" rows="5" th:placeholder="#{customers.placeholder.notes}"></textarea>
+                        <small th:if="${#fields.hasErrors('notes')}" th:errors="*{notes}"></small>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <a class="button button--ghost"
+                       th:href="${editing}
+                                ? @{/{shopSlug}/customers/{customerId}(shopSlug=${shop.slug}, customerId=${customerId})}
+                                : @{/{shopSlug}/customers(shopSlug=${shop.slug})}"
+                       th:text="#{common.cancel}"></a>
+                    <button class="button button--primary"
+                            type="submit"
+                            th:text="${editing} ? #{customers.form.edit.submit} : #{customers.form.new.submit}"></button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="side-note-card">
+            <span class="section-kicker" th:text="#{customers.form.help.eyebrow}"></span>
+            <h2 th:text="#{customers.form.help.title}"></h2>
+            <p th:text="#{customers.form.help.body}"></p>
+        </aside>
+    </section>
+</main>
+</body>
+</html>

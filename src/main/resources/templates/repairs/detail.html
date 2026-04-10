@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.repairDetail})}"></head>
+<body class="dashboard-page">
+<main class="page-shell">
+    <div th:replace="~{fragments/ui :: tenantHeader(${shop}, 'items')}"></div>
+
+    <section class="page-hero">
+        <div class="page-hero__copy">
+            <span class="section-kicker" th:text="#{repairs.detail.eyebrow}"></span>
+            <h1 th:text="${repair.title}"></h1>
+            <p class="muted-copy" th:text="${repair.customer.fullName}"></p>
+        </div>
+        <div class="page-hero__actions">
+            <a class="button button--ghost" th:href="@{|/${shop.slug}/items|}" th:text="#{common.backToList}"></a>
+            <a class="button button--primary" th:href="@{|/${shop.slug}/items/${repair.id}/edit|}" th:text="#{common.edit}"></a>
+        </div>
+    </section>
+
+    <section class="detail-grid">
+        <article class="detail-card">
+            <span class="section-kicker" th:text="#{repairs.detail.summary.title}"></span>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span th:text="#{repairs.field.status}"></span>
+                    <strong class="status-badge"
+                            th:classappend="| status--${repair.status.name()}|"
+                            th:text="${#messages.msg('repair.status.' + repair.status.name())}"></strong>
+                </div>
+                <div class="info-item">
+                    <span th:text="#{repairs.field.customer}"></span>
+                    <strong th:text="${repair.customer.fullName}"></strong>
+                </div>
+                <div class="info-item">
+                    <span th:text="#{repairs.field.pickupCode}"></span>
+                    <strong th:text="${repair.pickupCode}"></strong>
+                </div>
+                <div class="info-item">
+                    <span th:text="#{repairs.field.expectedDeliveryDate}"></span>
+                    <strong th:text="${repair.expectedDeliveryDate != null ? #temporals.format(repair.expectedDeliveryDate, #messages.msg('format.date')) : #messages.msg('app.notAvailable')}"></strong>
+                </div>
+            </div>
+        </article>
+
+        <article class="detail-card">
+            <span class="section-kicker" th:text="#{repairs.detail.financials.title}"></span>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span th:text="#{repairs.field.estimatedPrice}"></span>
+                    <strong th:text="${#numbers.formatDecimal(repair.estimatedPrice, 1, 2)}"></strong>
+                </div>
+                <div class="info-item">
+                    <span th:text="#{repairs.field.depositPaid}"></span>
+                    <strong th:text="${#numbers.formatDecimal(repair.depositPaid, 1, 2)}"></strong>
+                </div>
+                <div class="info-item">
+                    <span th:text="#{repairs.field.remainingBalance}"></span>
+                    <strong th:text="${#numbers.formatDecimal(repair.remainingBalance, 1, 2)}"></strong>
+                </div>
+            </div>
+        </article>
+
+        <article class="detail-card">
+            <span class="section-kicker" th:text="#{repairs.field.description}"></span>
+            <p th:text="${repair.description != null ? repair.description : #messages.msg('repairs.detail.description.empty')}"></p>
+        </article>
+
+        <article class="detail-card">
+            <span class="section-kicker" th:text="#{repairs.field.repairNotes}"></span>
+            <p th:text="${repair.repairNotes != null ? repair.repairNotes : #messages.msg('repairs.detail.repairNotes.empty')}"></p>
+        </article>
+    </section>
+
+    <section class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__copy">
+                <span class="section-kicker" th:text="#{repairs.detail.history.eyebrow}"></span>
+                <h2 th:text="#{repairs.detail.history.title}"></h2>
+                <p class="muted-copy" th:text="#{repairs.detail.history.subtitle}"></p>
+            </div>
+        </div>
+
+        <div class="timeline">
+            <article class="timeline-entry" th:each="entry : ${repair.history}">
+                <div class="timeline-entry__marker"></div>
+                <div class="timeline-entry__body">
+                    <div class="timeline-entry__header">
+                        <span class="status-badge"
+                              th:classappend="| status--${entry.status.name()}|"
+                              th:text="${#messages.msg('repair.status.' + entry.status.name())}"></span>
+                        <strong th:text="${#temporals.format(entry.createdAt, #messages.msg('format.dateTime'))}"></strong>
+                    </div>
+                    <p class="timeline-entry__meta"
+                       th:text="${entry.changedByName != null ? entry.changedByName : #messages.msg('repairs.detail.history.system')}"></p>
+                    <p th:if="${entry.notes != null}" th:text="${entry.notes}"></p>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.repairs})}"></head>
+<body class="dashboard-page">
+<main class="page-shell">
+    <div th:replace="~{fragments/ui :: tenantHeader(${shop}, 'items')}"></div>
+
+    <section class="page-hero">
+        <div class="page-hero__copy">
+            <span class="section-kicker" th:text="#{repairs.list.eyebrow}"></span>
+            <h1 th:text="#{repairs.list.title}"></h1>
+            <p class="muted-copy" th:text="#{repairs.list.subtitle}"></p>
+        </div>
+        <div class="page-hero__actions">
+            <a class="button button--primary" th:href="@{|/${shop.slug}/items/new|}" th:text="#{repairs.list.cta}"></a>
+        </div>
+    </section>
+
+    <section class="section-card">
+        <div class="empty-state" th:if="${repairs.isEmpty()}">
+            <h3 th:text="#{repairs.list.empty.title}"></h3>
+            <p th:text="#{repairs.list.empty.body}"></p>
+            <div class="empty-state__actions">
+                <a class="button button--ghost" th:href="@{|/${shop.slug}/customers/new|}" th:text="#{repairs.list.empty.customerCta}"></a>
+                <a class="button button--primary" th:href="@{|/${shop.slug}/items/new|}" th:text="#{repairs.list.cta}"></a>
+            </div>
+        </div>
+
+        <div class="entity-list" th:if="${!repairs.isEmpty()}">
+            <article class="entity-row" th:each="repair : ${repairs}">
+                <div class="entity-row__main">
+                    <div class="entity-row__title-group">
+                        <a class="entity-row__title"
+                           th:href="@{|/${shop.slug}/items/${repair.id}|}"
+                           th:text="${repair.title}"></a>
+                        <p class="entity-row__subtitle" th:text="${repair.customerName}"></p>
+                    </div>
+                    <div class="entity-row__actions">
+                        <span class="status-badge"
+                              th:classappend="| status--${repair.status.name()}|"
+                              th:text="${#messages.msg('repair.status.' + repair.status.name())}"></span>
+                        <a class="button button--ghost"
+                           th:href="@{|/${shop.slug}/items/${repair.id}|}"
+                           th:text="#{common.view}"></a>
+                    </div>
+                </div>
+                <div class="entity-row__meta">
+                    <div class="meta-pill">
+                        <span th:text="#{repairs.field.pickupCode}"></span>
+                        <strong th:text="${repair.pickupCode}"></strong>
+                    </div>
+                    <div class="meta-pill">
+                        <span th:text="#{repairs.field.expectedDeliveryDate}"></span>
+                        <strong th:text="${repair.expectedDeliveryDate != null ? #temporals.format(repair.expectedDeliveryDate, #messages.msg('format.date')) : #messages.msg('app.notAvailable')}"></strong>
+                    </div>
+                    <div class="meta-pill">
+                        <span th:text="#{repairs.field.remainingBalance}"></span>
+                        <strong th:text="${#numbers.formatDecimal(repair.remainingBalance, 1, 2)}"></strong>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+</body>
+</html>
