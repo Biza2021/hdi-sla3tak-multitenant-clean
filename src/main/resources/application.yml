@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: ${APP_DATASOURCE_URL:jdbc:postgresql://localhost:5432/benchpilot}
+    username: ${APP_DATASOURCE_USERNAME:postgres}
+    password: ${APP_DATASOURCE_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  thymeleaf:
+    cache: false
+  flyway:
+    enabled: true
+server:
+  servlet:
+    session:
+      timeout: 12h
+      cookie:
+        same-site: lax
+

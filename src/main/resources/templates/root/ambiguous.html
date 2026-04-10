@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: appHead('Shop URL Required')}"></head>
+<body class="auth-page">
+<main class="auth-shell auth-shell--single">
+    <section class="auth-card">
+        <span class="eyebrow">BenchPilot</span>
+        <h1>Direct root access is disabled when multiple shops exist.</h1>
+        <p class="lede">
+            Open your shop-specific URL to continue, such as <code>/your-shop/login</code>.
+        </p>
+        <div class="stack">
+            <a class="button button--primary" th:href="@{/shops/new}">Create a New Shop</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>
+

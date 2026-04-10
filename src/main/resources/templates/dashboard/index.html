@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: appHead('Dashboard')}"></head>
+<body class="dashboard-page">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <span class="eyebrow">BenchPilot</span>
+            <h1 th:text="${shop.businessName}">Shop Dashboard</h1>
+            <p class="muted-copy">Phase 1 foundation is active. Tenant-safe business screens land next.</p>
+        </div>
+        <form th:action="@{|/${shop.slug}/logout|}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit" class="button button--ghost">Sign Out</button>
+        </form>
+    </header>
+
+    <section class="metric-grid">
+        <article class="metric-card">
+            <span class="metric-label">Tenant routing</span>
+            <strong class="metric-value" th:text="${shop.slug}">atlas-repair</strong>
+            <p>All protected screens stay pinned to this shop slug.</p>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Access model</span>
+            <strong class="metric-value" th:text="${currentUser.role}">OWNER</strong>
+            <p>Your session is scoped to this shop only.</p>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Ready for Phase 2</span>
+            <strong class="metric-value">Customers + Repairs</strong>
+            <p>The repositories and schema are in place for the next screens.</p>
+        </article>
+    </section>
+
+    <section class="placeholder-card">
+        <h2>What is already live</h2>
+        <p>
+            Public onboarding at <code>/shops/new</code>, tenant-aware login at
+            <code th:text="|/${shop.slug}/login|">/shop/login</code>, root fail-closed behavior,
+            strict authenticated slug checks, and a clean multi-tenant schema with shop ownership on every tenant record.
+        </p>
+    </section>
+</main>
+</body>
+</html>
