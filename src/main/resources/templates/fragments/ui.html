@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="languageSwitcher(currentPath)" class="utility-bar">
+    <div class="language-switcher" role="group" th:attr="aria-label=#{language.switcher.label}">
+        <form class="language-form" method="get" th:action="${currentPath}">
+            <button
+                    class="language-option"
+                    type="submit"
+                    name="lang"
+                    value="fr"
+                    lang="fr"
+                    th:classappend="${currentLanguage == 'fr'} ? ' is-active' : ''"
+                    th:text="#{language.fr.label}"></button>
+        </form>
+        <form class="language-form" method="get" th:action="${currentPath}">
+            <button
+                    class="language-option"
+                    type="submit"
+                    name="lang"
+                    value="ar"
+                    lang="ar"
+                    dir="rtl"
+                    th:classappend="${currentLanguage == 'ar'} ? ' is-active' : ''"
+                    th:text="#{language.ar.label}"></button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

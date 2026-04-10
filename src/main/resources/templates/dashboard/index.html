@@ -1,45 +1,48 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: appHead('Dashboard')}"></head>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.dashboard})}"></head>
 <body class="dashboard-page">
-<main class="page-shell">
-    <header class="topbar">
-        <div>
-            <span class="eyebrow">BenchPilot</span>
-            <h1 th:text="${shop.businessName}">Shop Dashboard</h1>
-            <p class="muted-copy">Phase 1 foundation is active. Tenant-safe business screens land next.</p>
+<main class="page-shell" th:with="roleLabel=${#messages.msg('user.role.' + currentUser.role.name())}">
+    <section class="dashboard-hero">
+        <div class="dashboard-hero__copy">
+            <div class="panel-topline">
+                <span class="eyebrow" th:text="#{app.brand}"></span>
+                <span class="role-chip" th:text="${roleLabel}"></span>
+            </div>
+            <h1 th:text="${shop.businessName}"></h1>
+            <p class="muted-copy" th:text="#{dashboard.header.subtitle}"></p>
         </div>
-        <form th:action="@{|/${shop.slug}/logout|}" method="post">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <button type="submit" class="button button--ghost">Sign Out</button>
-        </form>
-    </header>
+        <div class="dashboard-hero__actions">
+            <div th:replace="~{fragments/ui :: languageSwitcher(${currentPath})}"></div>
+            <form th:action="@{|/${shop.slug}/logout|}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="button button--ghost" th:text="#{dashboard.logout}"></button>
+            </form>
+        </div>
+    </section>
 
     <section class="metric-grid">
         <article class="metric-card">
-            <span class="metric-label">Tenant routing</span>
-            <strong class="metric-value" th:text="${shop.slug}">atlas-repair</strong>
-            <p>All protected screens stay pinned to this shop slug.</p>
+            <span class="metric-label" th:text="#{dashboard.metric.tenantRouting.label}"></span>
+            <strong class="metric-value" th:text="${shop.slug}"></strong>
+            <p th:text="#{dashboard.metric.tenantRouting.body}"></p>
         </article>
         <article class="metric-card">
-            <span class="metric-label">Access model</span>
-            <strong class="metric-value" th:text="${currentUser.role}">OWNER</strong>
-            <p>Your session is scoped to this shop only.</p>
+            <span class="metric-label" th:text="#{dashboard.metric.accessModel.label}"></span>
+            <strong class="metric-value" th:text="${roleLabel}"></strong>
+            <p th:text="#{dashboard.metric.accessModel.body}"></p>
         </article>
         <article class="metric-card">
-            <span class="metric-label">Ready for Phase 2</span>
-            <strong class="metric-value">Customers + Repairs</strong>
-            <p>The repositories and schema are in place for the next screens.</p>
+            <span class="metric-label" th:text="#{dashboard.metric.phase2.label}"></span>
+            <strong class="metric-value" th:text="#{dashboard.metric.phase2.value}"></strong>
+            <p th:text="#{dashboard.metric.phase2.body}"></p>
         </article>
     </section>
 
-    <section class="placeholder-card">
-        <h2>What is already live</h2>
-        <p>
-            Public onboarding at <code>/shops/new</code>, tenant-aware login at
-            <code th:text="|/${shop.slug}/login|">/shop/login</code>, root fail-closed behavior,
-            strict authenticated slug checks, and a clean multi-tenant schema with shop ownership on every tenant record.
-        </p>
+    <section class="placeholder-card placeholder-card--soft">
+        <h2 th:text="#{dashboard.live.title}"></h2>
+        <p th:with="onboardingRoute='/shops/new', loginRoute=|/${shop.slug}/login|"
+           th:text="#{dashboard.live.body(${onboardingRoute}, ${loginRoute})}"></p>
     </section>
 </main>
 </body>

@@ -1,19 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: appHead('Shop URL Required')}"></head>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.shopUrlRequired})}"></head>
 <body class="auth-page">
 <main class="auth-shell auth-shell--single">
+    <div th:replace="~{fragments/ui :: languageSwitcher(${currentPath})}"></div>
     <section class="auth-card">
-        <span class="eyebrow">BenchPilot</span>
-        <h1>Direct root access is disabled when multiple shops exist.</h1>
-        <p class="lede">
-            Open your shop-specific URL to continue, such as <code>/your-shop/login</code>.
-        </p>
+        <span class="eyebrow" th:text="#{app.brand}"></span>
+        <h1 th:text="#{root.ambiguous.heading}"></h1>
+        <p class="lede" th:with="exampleRoute='/your-shop/login'" th:text="#{root.ambiguous.lede(${exampleRoute})}"></p>
         <div class="stack">
-            <a class="button button--primary" th:href="@{/shops/new}">Create a New Shop</a>
+            <a class="button button--primary" th:href="@{/shops/new}" th:text="#{root.ambiguous.cta}"></a>
         </div>
     </section>
 </main>
 </body>
 </html>
-

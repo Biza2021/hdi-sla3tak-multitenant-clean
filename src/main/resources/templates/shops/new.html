@@ -1,75 +1,80 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: appHead('Create Your Shop')}"></head>
-<body class="auth-page">
-<main class="auth-shell">
-    <section class="hero-panel">
-        <span class="eyebrow">BenchPilot</span>
-        <h1>Launch a clean, tenant-safe repair desk for your shop.</h1>
-        <p class="lede">
-            Each shop gets its own workspace, users, customers, repairs, and branded tracking pages on isolated routes from day one.
-        </p>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.shopCreate})}"></head>
+<body class="auth-page auth-page--onboarding">
+<main class="auth-shell auth-shell--balanced">
+    <div th:replace="~{fragments/ui :: languageSwitcher(${currentPath})}"></div>
+    <section class="hero-panel hero-panel--intro">
+        <div class="panel-topline">
+            <span class="eyebrow" th:text="#{app.brand}"></span>
+            <span class="context-chip" th:text="${currentPath}"></span>
+        </div>
+        <div class="hero-copy">
+            <h1 th:text="#{onboarding.hero.title}"></h1>
+            <p class="lede" th:text="#{onboarding.hero.lede}"></p>
+        </div>
         <div class="hero-notes">
             <div class="hero-note">
-                <strong>Tenant-first routing</strong>
-                <span>Every staff login and dashboard lives under your shop slug.</span>
+                <strong th:text="#{onboarding.hero.note1.title}"></strong>
+                <span th:text="#{onboarding.hero.note1.body}"></span>
             </div>
             <div class="hero-note">
-                <strong>Owner account included</strong>
-                <span>Create your shop and first owner/admin in one transaction.</span>
+                <strong th:text="#{onboarding.hero.note2.title}"></strong>
+                <span th:text="#{onboarding.hero.note2.body}"></span>
             </div>
             <div class="hero-note">
-                <strong>Built for growth</strong>
-                <span>Customers, repairs, images, and public tracking stay isolated by shop.</span>
+                <strong th:text="#{onboarding.hero.note3.title}"></strong>
+                <span th:text="#{onboarding.hero.note3.body}"></span>
             </div>
         </div>
     </section>
 
-    <section class="auth-card">
-        <span class="eyebrow">Shop Setup</span>
-        <h2>Create your workspace</h2>
-        <p class="muted-copy">Your slug becomes the base path for tenant-aware login and dashboard routes.</p>
+    <section class="auth-card auth-card--form">
+        <div class="card-heading">
+            <span class="eyebrow" th:text="#{onboarding.form.eyebrow}"></span>
+            <h2 th:text="#{onboarding.form.title}"></h2>
+            <p class="muted-copy" th:text="#{onboarding.form.lede}"></p>
+        </div>
 
         <form th:action="@{/shops/new}" th:object="${shopRegistrationForm}" method="post" class="stack">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
             <label class="field">
-                <span>Business name</span>
-                <input type="text" th:field="*{businessName}" placeholder="Atlas Repair Co.">
+                <span th:text="#{onboarding.form.businessName.label}"></span>
+                <input type="text" th:field="*{businessName}" th:placeholder="#{onboarding.form.businessName.placeholder}">
                 <small th:if="${#fields.hasErrors('businessName')}" th:errors="*{businessName}"></small>
             </label>
 
             <label class="field">
-                <span>Shop slug</span>
+                <span th:text="#{onboarding.form.slug.label}"></span>
                 <div class="input-hint">
-                    <input type="text" th:field="*{slug}" placeholder="atlas-repair">
-                    <em>Example: /atlas-repair/login</em>
+                    <input type="text" th:field="*{slug}" th:placeholder="#{onboarding.form.slug.placeholder}">
+                    <em th:with="loginExample='/atlas-repair/login'" th:text="#{onboarding.form.slug.hint(${loginExample})}"></em>
                 </div>
                 <small th:if="${#fields.hasErrors('slug')}" th:errors="*{slug}"></small>
             </label>
 
             <label class="field">
-                <span>Owner full name</span>
-                <input type="text" th:field="*{ownerFullName}" placeholder="Amina El Idrissi">
+                <span th:text="#{onboarding.form.ownerFullName.label}"></span>
+                <input type="text" th:field="*{ownerFullName}" th:placeholder="#{onboarding.form.ownerFullName.placeholder}">
                 <small th:if="${#fields.hasErrors('ownerFullName')}" th:errors="*{ownerFullName}"></small>
             </label>
 
             <label class="field">
-                <span>Owner username</span>
-                <input type="text" th:field="*{ownerUsername}" placeholder="amina">
+                <span th:text="#{onboarding.form.ownerUsername.label}"></span>
+                <input type="text" th:field="*{ownerUsername}" th:placeholder="#{onboarding.form.ownerUsername.placeholder}">
                 <small th:if="${#fields.hasErrors('ownerUsername')}" th:errors="*{ownerUsername}"></small>
             </label>
 
             <label class="field">
-                <span>Owner password</span>
-                <input type="password" th:field="*{ownerPassword}" placeholder="At least 8 characters">
+                <span th:text="#{onboarding.form.ownerPassword.label}"></span>
+                <input type="password" th:field="*{ownerPassword}" th:placeholder="#{onboarding.form.ownerPassword.placeholder}">
                 <small th:if="${#fields.hasErrors('ownerPassword')}" th:errors="*{ownerPassword}"></small>
             </label>
 
-            <button class="button button--primary button--block" type="submit">Create Shop</button>
+            <button class="button button--primary button--block" type="submit" th:text="#{onboarding.form.submit}"></button>
         </form>
     </section>
 </main>
 </body>
 </html>
-

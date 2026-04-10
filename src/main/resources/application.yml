@@ -3,6 +3,10 @@ spring:
     url: ${APP_DATASOURCE_URL:jdbc:postgresql://localhost:5432/benchpilot}
     username: ${APP_DATASOURCE_USERNAME:postgres}
     password: ${APP_DATASOURCE_PASSWORD:postgres}
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
   jpa:
     hibernate:
       ddl-auto: validate
@@ -21,4 +25,3 @@ server:
       timeout: 12h
       cookie:
         same-site: lax
-

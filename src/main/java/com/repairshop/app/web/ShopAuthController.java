@@ -80,7 +80,7 @@ public class ShopAuthController {
             new HttpSessionSecurityContextRepository().saveContext(context, request, response);
             return "redirect:/" + shop.getSlug() + "/dashboard";
         } catch (AuthenticationException ex) {
-            bindingResult.reject("auth.login.invalid", "Incorrect username or password.");
+            model.addAttribute("loginError", true);
             model.addAttribute("shop", shop);
             return "auth/login";
         }

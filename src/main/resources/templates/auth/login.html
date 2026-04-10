@@ -1,42 +1,45 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: appHead('Sign In')}"></head>
-<body class="auth-page">
-<main class="auth-shell auth-shell--single">
-    <section class="auth-card">
-        <span class="eyebrow" th:text="${shop.businessName}">Shop</span>
-        <h1>Sign in to your repair workspace.</h1>
-        <p class="lede">
-            Tenant-aware authentication checks your username and password inside
-            <strong th:text="${shop.slug}">shop-slug</strong>.
-        </p>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.login})}"></head>
+<body class="auth-page auth-page--login">
+<main class="auth-shell auth-shell--single auth-shell--compact">
+    <div th:replace="~{fragments/ui :: languageSwitcher(${currentPath})}"></div>
+    <section class="auth-card auth-card--login">
+        <div class="card-heading">
+            <div class="panel-topline">
+                <span class="eyebrow" th:text="${shop.businessName}"></span>
+                <span class="context-chip" th:text="|/${shop.slug}|"></span>
+            </div>
+            <h1 th:text="#{auth.login.title}"></h1>
+            <p class="lede" th:text="#{auth.login.lede(${shop.slug})}"></p>
+        </div>
 
         <div class="notice success" th:if="${param.created != null}">
-            Shop created successfully. Sign in to continue.
+            <span th:text="#{auth.login.created}"></span>
         </div>
         <div class="notice success" th:if="${param.loggedOut != null}">
-            You have been signed out.
+            <span th:text="#{auth.login.loggedOut}"></span>
         </div>
-        <div class="notice error" th:if="${#fields.hasGlobalErrors()}">
-            <span th:each="err : ${#fields.globalErrors()}" th:text="${err}">Incorrect username or password.</span>
+        <div class="notice error" th:if="${loginError}">
+            <span th:text="#{auth.login.invalid}"></span>
         </div>
 
-        <form th:action="@{|/${shop.slug}/login|}" th:object="${loginForm}" method="post" class="stack">
+        <form th:action="@{|/${shop.slug}/login|}" th:object="${loginForm}" method="post" class="stack stack--tight">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
             <label class="field">
-                <span>Username</span>
-                <input type="text" th:field="*{username}" placeholder="amina" autocomplete="username">
+                <span th:text="#{auth.login.username.label}"></span>
+                <input type="text" th:field="*{username}" th:placeholder="#{auth.login.username.placeholder}" autocomplete="username">
                 <small th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
             </label>
 
             <label class="field">
-                <span>Password</span>
-                <input type="password" th:field="*{password}" placeholder="Your password" autocomplete="current-password">
+                <span th:text="#{auth.login.password.label}"></span>
+                <input type="password" th:field="*{password}" th:placeholder="#{auth.login.password.placeholder}" autocomplete="current-password">
                 <small th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
             </label>
 
-            <button class="button button--primary button--block" type="submit">Sign In</button>
+            <button class="button button--primary button--block" type="submit" th:text="#{auth.login.submit}"></button>
         </form>
     </section>
 </main>
