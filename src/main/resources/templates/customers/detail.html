@@ -9,7 +9,6 @@
         <div class="page-hero__copy">
             <span class="section-kicker" th:text="#{customers.detail.eyebrow}"></span>
             <h1 th:text="${customer.fullName}"></h1>
-            <p class="muted-copy" th:text="#{customers.detail.subtitle}"></p>
         </div>
         <div class="page-hero__actions">
             <a class="button button--ghost" th:href="@{|/${shop.slug}/customers|}" th:text="#{common.backToList}"></a>
@@ -43,7 +42,6 @@
             <div class="section-card__copy">
                 <span class="section-kicker" th:text="#{customers.detail.repairs.eyebrow}"></span>
                 <h2 th:text="#{customers.detail.repairs.title}"></h2>
-                <p class="muted-copy" th:text="#{customers.detail.repairs.subtitle}"></p>
             </div>
             <a class="button button--ghost" th:href="@{|/${shop.slug}/items|}" th:text="#{tenant.nav.repairs}"></a>
         </div>
@@ -76,6 +74,8 @@
             </article>
         </div>
     </section>
+
+    <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
 </body>
 </html>

@@ -12,9 +12,9 @@
                 <span class="role-chip" th:text="${#messages.msg('user.role.' + currentUser.role.name())}"></span>
             </div>
             <h1 th:text="#{dashboard.hero.title}"></h1>
-            <p class="muted-copy" th:text="#{dashboard.hero.subtitle}"></p>
         </div>
         <div class="dashboard-hero__actions">
+            <a class="button button--ghost" th:href="@{|/${shop.slug}/delivery|}" th:text="#{tenant.nav.delivery}"></a>
             <a class="button button--ghost" th:href="@{|/${shop.slug}/customers|}" th:text="#{tenant.nav.customers}"></a>
             <a class="button button--primary" th:href="@{|/${shop.slug}/items/new|}" th:text="#{dashboard.hero.cta}"></a>
         </div>
@@ -24,22 +24,18 @@
         <article class="metric-card">
             <span class="metric-label" th:text="#{dashboard.metric.totalCustomers.label}"></span>
             <strong class="metric-value" th:text="${dashboard.totalCustomers}"></strong>
-            <p th:text="#{dashboard.metric.totalCustomers.body}"></p>
         </article>
         <article class="metric-card">
             <span class="metric-label" th:text="#{dashboard.metric.activeRepairs.label}"></span>
             <strong class="metric-value" th:text="${dashboard.activeRepairs}"></strong>
-            <p th:text="#{dashboard.metric.activeRepairs.body}"></p>
         </article>
         <article class="metric-card">
             <span class="metric-label" th:text="#{dashboard.metric.readyForPickup.label}"></span>
             <strong class="metric-value" th:text="${dashboard.readyForPickup}"></strong>
-            <p th:text="#{dashboard.metric.readyForPickup.body}"></p>
         </article>
         <article class="metric-card">
             <span class="metric-label" th:text="#{dashboard.metric.deliveredRecently.label}"></span>
             <strong class="metric-value" th:text="${dashboard.deliveredRecently}"></strong>
-            <p th:text="#{dashboard.metric.deliveredRecently.body}"></p>
         </article>
     </section>
 
@@ -48,7 +44,6 @@
             <div class="section-card__copy">
                 <span class="section-kicker" th:text="#{dashboard.recent.eyebrow}"></span>
                 <h2 th:text="#{dashboard.recent.title}"></h2>
-                <p class="muted-copy" th:text="#{dashboard.recent.subtitle}"></p>
             </div>
             <a class="button button--ghost" th:href="@{|/${shop.slug}/items|}" th:text="#{dashboard.recent.viewAll}"></a>
         </div>
@@ -91,6 +86,8 @@
             </article>
         </div>
     </section>
+
+    <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
 </body>
 </html>

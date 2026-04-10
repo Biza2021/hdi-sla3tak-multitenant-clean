@@ -17,7 +17,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Locale;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,6 +48,19 @@ public class RepairImageStorageService {
     public Optional<RepairImageSummaryView> findSummary(Long shopId, Long repairId) {
         return repairImageRepository.findByRepairItemIdAndShopId(repairId, shopId)
                 .map(this::toSummary);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, RepairImageSummaryView> findSummariesByRepairIds(Long shopId, List<Long> repairIds) {
+        if (repairIds == null || repairIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, RepairImageSummaryView> summaries = new LinkedHashMap<>();
+        for (RepairImage image : repairImageRepository.findAllByRepairItemIdInAndShopId(repairIds, shopId)) {
+            summaries.put(image.getRepairItem().getId(), toSummary(image));
+        }
+        return summaries;
     }
 
     @Transactional
@@ -97,19 +111,14 @@ public class RepairImageStorageService {
 
     @Transactional(readOnly = true)
     public StoredRepairImageContent loadForRepair(Long shopId, Long repairId) {
-        RepairImage image = repairImageRepository.findByRepairItemIdAndShopId(repairId, shopId)
+        return findContentForRepair(shopId, repairId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        Path storagePath = resolveStoragePath(image.getStorageKey());
-        if (!Files.isReadable(storagePath) || !Files.isRegularFile(storagePath)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
+    }
 
-        return new StoredRepairImageContent(
-                new FileSystemResource(storagePath),
-                image.getOriginalFilename(),
-                image.getContentType(),
-                image.getFileSize()
-        );
+    @Transactional(readOnly = true)
+    public Optional<StoredRepairImageContent> findContentForRepair(Long shopId, Long repairId) {
+        return repairImageRepository.findByRepairItemIdAndShopId(repairId, shopId)
+                .flatMap(this::toStoredContent);
     }
 
     private String validateAndResolveExtension(MultipartFile imageFile) {
@@ -127,12 +136,21 @@ public class RepairImageStorageService {
     }
 
     private RepairImageSummaryView toSummary(RepairImage image) {
-        return new RepairImageSummaryView(
+        return new RepairImageSummaryView(image.getOriginalFilename());
+    }
+
+    private Optional<StoredRepairImageContent> toStoredContent(RepairImage image) {
+        Path storagePath = resolveStoragePath(image.getStorageKey());
+        if (!Files.isReadable(storagePath) || !Files.isRegularFile(storagePath)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new StoredRepairImageContent(
+                new FileSystemResource(storagePath),
                 image.getOriginalFilename(),
                 image.getContentType(),
-                image.getFileSize(),
-                formatFileSize(image.getFileSize())
-        );
+                image.getFileSize()
+        ));
     }
 
     private String buildStorageKey(Long shopId, Long repairId, String extension) {
@@ -154,19 +172,6 @@ public class RepairImageStorageService {
             return "repair-image" + extension;
         }
         return candidate.length() > 255 ? candidate.substring(candidate.length() - 255) : candidate;
-    }
-
-    private String formatFileSize(long fileSize) {
-        if (fileSize < 1024) {
-            return fileSize + " B";
-        }
-
-        double kilobytes = fileSize / 1024.0;
-        if (kilobytes < 1024) {
-            return String.format(Locale.ROOT, "%.1f KB", kilobytes);
-        }
-
-        return String.format(Locale.ROOT, "%.1f MB", kilobytes / 1024.0);
     }
 
     private void deleteQuietly(String storageKey) {

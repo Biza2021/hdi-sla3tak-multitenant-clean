@@ -9,7 +9,6 @@
         <div class="page-hero__copy">
             <span class="section-kicker" th:text="#{repairs.form.eyebrow}"></span>
             <h1 th:text="${editing} ? #{repairs.form.edit.title} : #{repairs.form.new.title}"></h1>
-            <p class="muted-copy" th:text="${editing} ? #{repairs.form.edit.subtitle} : #{repairs.form.new.subtitle}"></p>
         </div>
     </section>
 
@@ -19,7 +18,7 @@
         <a class="button button--primary" th:href="@{|/${shop.slug}/customers/new|}" th:text="#{repairs.form.customersRequired.cta}"></a>
     </div>
 
-    <section class="form-layout" th:if="${!customerOptions.isEmpty()}">
+    <section class="form-layout form-layout--single" th:if="${!customerOptions.isEmpty()}">
         <section class="section-card section-card--form">
             <form th:action="${editing}
                     ? @{/{shopSlug}/items/{repairId}/edit(shopSlug=${shop.slug}, repairId=${repairId})}
@@ -75,25 +74,12 @@
                         <input type="file"
                                th:field="*{imageFile}"
                                accept="image/jpeg,image/png,image/webp">
-                        <div class="input-hint">
-                            <em th:text="#{repairs.form.image.hint}"></em>
-                        </div>
                         <small th:if="${#fields.hasErrors('imageFile')}" th:errors="*{imageFile}"></small>
 
                         <div class="upload-preview" th:if="${editing and existingImage != null}">
                             <img class="repair-image"
                                  th:src="@{|/${shop.slug}/items/${repairId}/image|}"
                                  th:alt="${repairItemForm.title != null ? repairItemForm.title : #messages.msg('repairs.detail.image.title')}">
-                            <div class="entity-row__meta">
-                                <div class="meta-pill">
-                                    <span th:text="#{repairs.detail.image.filename}"></span>
-                                    <strong th:text="${existingImage.originalFilename}"></strong>
-                                </div>
-                                <div class="meta-pill">
-                                    <span th:text="#{repairs.detail.image.fileSize}"></span>
-                                    <strong th:text="${existingImage.fileSizeLabel}"></strong>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -134,13 +120,9 @@
                 </div>
             </form>
         </section>
-
-        <aside class="side-note-card">
-            <span class="section-kicker" th:text="#{repairs.form.help.eyebrow}"></span>
-            <h2 th:text="#{repairs.form.help.title}"></h2>
-            <p th:text="#{repairs.form.help.body}"></p>
-        </aside>
     </section>
+
+    <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
 </body>
 </html>

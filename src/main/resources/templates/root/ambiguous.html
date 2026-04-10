@@ -2,15 +2,59 @@
 <html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
 <head th:replace="~{fragments/head :: appHead(#{page.title.shopUrlRequired})}"></head>
 <body class="auth-page">
-<main class="auth-shell auth-shell--single">
+<main class="auth-shell">
     <div th:replace="~{fragments/ui :: languageSwitcher(${currentPath})}"></div>
-    <section class="auth-card">
-        <span class="eyebrow" th:text="#{app.brand}"></span>
-        <h1 th:text="#{root.ambiguous.heading}"></h1>
-        <p class="lede" th:with="exampleRoute='/your-shop/login'" th:text="#{root.ambiguous.lede(${exampleRoute})}"></p>
-        <div class="stack">
-            <a class="button button--primary" th:href="@{/shops/new}" th:text="#{root.ambiguous.cta}"></a>
+
+    <section class="hero-panel hero-panel--intro">
+        <div class="panel-topline">
+            <span class="eyebrow" th:text="#{app.brand}"></span>
+            <span class="context-chip" th:text="#{root.ambiguous.context}"></span>
         </div>
+
+        <div class="hero-copy">
+            <h1 th:text="#{root.ambiguous.heading}"></h1>
+            <p class="lede" th:text="#{root.ambiguous.lede}"></p>
+        </div>
+
+        <div class="hero-notes">
+            <article class="hero-note">
+                <strong th:text="#{root.ambiguous.note1.title}"></strong>
+                <span th:text="#{root.ambiguous.note1.body}"></span>
+            </article>
+            <article class="hero-note">
+                <strong th:text="#{root.ambiguous.note2.title}"></strong>
+                <span th:text="#{root.ambiguous.note2.body}"></span>
+            </article>
+        </div>
+    </section>
+
+    <section class="auth-card auth-card--form">
+        <div class="card-heading">
+            <h2 th:text="#{root.ambiguous.access.title}"></h2>
+            <p class="muted-copy" th:text="#{root.ambiguous.access.body}"></p>
+        </div>
+
+        <div class="notice error" th:if="${shopLookupError}" th:text="#{root.ambiguous.error}"></div>
+
+        <form class="stack" method="get" th:action="@{/}">
+            <label class="field">
+                <span th:text="#{root.ambiguous.field.label}"></span>
+                <input type="text"
+                       name="shop"
+                       th:value="${enteredShopSlug}"
+                       th:placeholder="#{root.ambiguous.field.placeholder}"
+                       autocomplete="off"
+                       spellcheck="false">
+            </label>
+
+            <div class="input-hint">
+                <em th:text="#{root.ambiguous.field.hint}"></em>
+            </div>
+
+            <button class="button button--primary button--block" type="submit" th:text="#{root.ambiguous.submit}"></button>
+        </form>
+
+        <a class="button button--ghost button--block" th:href="@{/shops/new}" th:text="#{root.ambiguous.cta}"></a>
     </section>
 </main>
 </body>

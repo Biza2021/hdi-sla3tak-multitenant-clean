@@ -1,7 +1,10 @@
 package com.repairshop.app.web;
 
+import com.repairshop.app.communication.RepairCommunicationContext;
+import com.repairshop.app.communication.RepairCommunicationLinkService;
 import com.repairshop.app.customer.CustomerNotFoundException;
 import com.repairshop.app.media.InvalidRepairImageException;
+import com.repairshop.app.repair.RepairDetailView;
 import com.repairshop.app.repair.RepairItemStatus;
 import com.repairshop.app.repair.RepairService;
 import com.repairshop.app.security.AuthenticatedShopUser;
@@ -18,16 +21,25 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.util.Locale;
 
 @Controller
 public class RepairItemController {
 
     private final ShopService shopService;
     private final RepairService repairService;
+    private final RepairCommunicationLinkService repairCommunicationLinkService;
 
-    public RepairItemController(ShopService shopService, RepairService repairService) {
+    public RepairItemController(
+            ShopService shopService,
+            RepairService repairService,
+            RepairCommunicationLinkService repairCommunicationLinkService
+    ) {
         this.shopService = shopService;
         this.repairService = repairService;
+        this.repairCommunicationLinkService = repairCommunicationLinkService;
     }
 
     @GetMapping("/{shopSlug}/items")
@@ -84,11 +96,36 @@ public class RepairItemController {
             @PathVariable String shopSlug,
             @PathVariable Long repairId,
             Authentication authentication,
+            Locale locale,
             Model model
     ) {
         AuthenticatedShopUser principal = CurrentUser.require(authentication);
-        model.addAttribute("shop", loadShop(shopSlug));
-        model.addAttribute("repair", repairService.getDetail(principal.shopId(), repairId));
+        Shop shop = loadShop(shopSlug);
+        RepairDetailView repair = repairService.getDetail(principal.shopId(), repairId);
+        String applicationBaseUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .build()
+                .toUriString();
+
+        model.addAttribute("shop", shop);
+        model.addAttribute("repair", repair);
+        model.addAttribute(
+                "trackingLinks",
+                repairCommunicationLinkService.buildTrackingLinks(
+                        buildCommunicationContext(shop, repair),
+                        locale,
+                        applicationBaseUrl
+                )
+        );
+        model.addAttribute(
+                "pickupLinks",
+                repair.status() == RepairItemStatus.READY_FOR_PICKUP
+                        ? repairCommunicationLinkService.buildReadyForPickupLinks(
+                        buildCommunicationContext(shop, repair),
+                        locale,
+                        applicationBaseUrl
+                )
+                        : null
+        );
         return "repairs/detail";
     }
 
@@ -156,5 +193,17 @@ public class RepairItemController {
 
     private Shop loadShop(String shopSlug) {
         return shopService.getBySlugOrThrow(shopSlug);
+    }
+
+    private RepairCommunicationContext buildCommunicationContext(Shop shop, RepairDetailView repair) {
+        return new RepairCommunicationContext(
+                shop.getBusinessName(),
+                repair.customer().fullName(),
+                repair.customer().primaryPhone(),
+                repair.customer().secondaryPhone(),
+                repair.title(),
+                repair.pickupCode(),
+                repair.publicTrackingToken()
+        );
     }
 }

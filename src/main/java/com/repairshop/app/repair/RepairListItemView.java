@@ -1,5 +1,7 @@
 package com.repairshop.app.repair;
 
+import com.repairshop.app.media.RepairImageSummaryView;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -10,6 +12,7 @@ public record RepairListItemView(
         RepairItemStatus status,
         LocalDate expectedDeliveryDate,
         String pickupCode,
-        BigDecimal remainingBalance
+        BigDecimal remainingBalance,
+        RepairImageSummaryView image
 ) {
 }

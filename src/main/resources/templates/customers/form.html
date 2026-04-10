@@ -9,11 +9,10 @@
         <div class="page-hero__copy">
             <span class="section-kicker" th:text="#{customers.form.eyebrow}"></span>
             <h1 th:text="${editing} ? #{customers.form.edit.title} : #{customers.form.new.title}"></h1>
-            <p class="muted-copy" th:text="${editing} ? #{customers.form.edit.subtitle} : #{customers.form.new.subtitle}"></p>
         </div>
     </section>
 
-    <section class="form-layout">
+    <section class="form-layout form-layout--single">
         <section class="section-card section-card--form">
             <form th:action="${editing}
                     ? @{/{shopSlug}/customers/{customerId}/edit(shopSlug=${shop.slug}, customerId=${customerId})}
@@ -61,13 +60,9 @@
                 </div>
             </form>
         </section>
-
-        <aside class="side-note-card">
-            <span class="section-kicker" th:text="#{customers.form.help.eyebrow}"></span>
-            <h2 th:text="#{customers.form.help.title}"></h2>
-            <p th:text="#{customers.form.help.body}"></p>
-        </aside>
     </section>
+
+    <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
 </body>
 </html>

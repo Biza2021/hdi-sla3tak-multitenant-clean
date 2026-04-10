@@ -9,7 +9,6 @@
         <div class="page-hero__copy">
             <span class="section-kicker" th:text="#{customers.list.eyebrow}"></span>
             <h1 th:text="#{customers.list.title}"></h1>
-            <p class="muted-copy" th:text="#{customers.list.subtitle}"></p>
         </div>
         <div class="page-hero__actions">
             <a class="button button--primary" th:href="@{|/${shop.slug}/customers/new|}" th:text="#{customers.list.cta}"></a>
@@ -63,6 +62,8 @@
             </article>
         </div>
     </section>
+
+    <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
 </body>
 </html>

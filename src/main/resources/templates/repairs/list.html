@@ -9,7 +9,6 @@
         <div class="page-hero__copy">
             <span class="section-kicker" th:text="#{repairs.list.eyebrow}"></span>
             <h1 th:text="#{repairs.list.title}"></h1>
-            <p class="muted-copy" th:text="#{repairs.list.subtitle}"></p>
         </div>
         <div class="page-hero__actions">
             <a class="button button--primary" th:href="@{|/${shop.slug}/items/new|}" th:text="#{repairs.list.cta}"></a>
@@ -29,11 +28,23 @@
         <div class="entity-list" th:if="${!repairs.isEmpty()}">
             <article class="entity-row" th:each="repair : ${repairs}">
                 <div class="entity-row__main">
-                    <div class="entity-row__title-group">
-                        <a class="entity-row__title"
+                    <div class="repair-row__identity">
+                        <a class="repair-row__preview"
                            th:href="@{|/${shop.slug}/items/${repair.id}|}"
-                           th:text="${repair.title}"></a>
-                        <p class="entity-row__subtitle" th:text="${repair.customerName}"></p>
+                           th:if="${repair.image != null}">
+                            <img class="repair-row__image"
+                                 th:src="@{|/${shop.slug}/items/${repair.id}/image|}"
+                                 th:alt="${repair.title}">
+                        </a>
+                        <div class="repair-row__preview repair-row__preview--empty" th:if="${repair.image == null}">
+                            <span th:text="#{repairs.list.image.empty}"></span>
+                        </div>
+                        <div class="entity-row__title-group">
+                            <a class="entity-row__title"
+                               th:href="@{|/${shop.slug}/items/${repair.id}|}"
+                               th:text="${repair.title}"></a>
+                            <p class="entity-row__subtitle" th:text="${repair.customerName}"></p>
+                        </div>
                     </div>
                     <div class="entity-row__actions">
                         <span class="status-badge"
@@ -61,6 +72,8 @@
             </article>
         </div>
     </section>
+
+    <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
 </body>
 </html>

@@ -13,7 +13,16 @@
 
         <div class="hero-copy">
             <h1 th:text="${tracking.title}"></h1>
-            <p class="lede" th:text="#{tracking.detail.lede(${tracking.shopBusinessName})}"></p>
+        </div>
+
+        <div class="repair-image-panel public-panel__media" th:if="${tracking.hasImage}">
+            <img class="repair-image public-panel__image"
+                 th:src="@{|/track/${tracking.publicTrackingToken}/image|}"
+                 th:alt="${tracking.title}">
+        </div>
+        <div class="empty-state public-panel__placeholder" th:if="${!tracking.hasImage}">
+            <h3 th:text="#{tracking.detail.image.empty.title}"></h3>
+            <p th:text="#{tracking.detail.image.empty.body}"></p>
         </div>
 
         <div class="info-grid public-info-grid">
@@ -30,6 +39,10 @@
             <div class="info-item">
                 <span th:text="#{tracking.detail.expectedDeliveryDate}"></span>
                 <strong th:text="${tracking.expectedDeliveryDate != null ? #temporals.format(tracking.expectedDeliveryDate, #messages.msg('format.date')) : #messages.msg('app.notAvailable')}"></strong>
+            </div>
+            <div class="info-item">
+                <span th:text="#{tracking.detail.pickupCode}"></span>
+                <strong th:text="${tracking.pickupCode}"></strong>
             </div>
         </div>
     </section>

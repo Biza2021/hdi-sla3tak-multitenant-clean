@@ -66,16 +66,6 @@
                 <img class="repair-image"
                      th:src="@{|/${shop.slug}/items/${repair.id}/image|}"
                      th:alt="${repair.title}">
-                <div class="entity-row__meta">
-                    <div class="meta-pill">
-                        <span th:text="#{repairs.detail.image.filename}"></span>
-                        <strong th:text="${repair.image.originalFilename}"></strong>
-                    </div>
-                    <div class="meta-pill">
-                        <span th:text="#{repairs.detail.image.fileSize}"></span>
-                        <strong th:text="${repair.image.fileSizeLabel}"></strong>
-                    </div>
-                </div>
             </div>
             <div class="empty-state" th:if="${repair.image == null}">
                 <h3 th:text="#{repairs.detail.image.empty.title}"></h3>
@@ -85,13 +75,75 @@
 
         <article class="detail-card">
             <span class="section-kicker" th:text="#{repairs.detail.tracking.title}"></span>
-            <p th:text="#{repairs.detail.tracking.body}"></p>
             <div class="page-hero__actions">
                 <a class="button button--ghost"
                    th:href="@{|/track/${repair.publicTrackingToken}|}"
                    target="_blank"
                    rel="noopener"
                    th:text="#{repairs.detail.tracking.open}"></a>
+            </div>
+        </article>
+
+        <article class="detail-card">
+            <span class="section-kicker" th:text="#{communication.section.eyebrow}"></span>
+            <div class="communication-stack">
+                <section class="communication-block">
+                    <div class="communication-block__header">
+                        <strong class="communication-block__title" th:text="#{communication.tracking.title}"></strong>
+                        <span class="communication-target" th:if="${trackingLinks != null and trackingLinks.targetPhone != null}">
+                            <span th:text="#{communication.targetPhone}"></span>
+                            <strong th:text="${trackingLinks.targetPhone}"></strong>
+                        </span>
+                    </div>
+                    <div class="communication-actions" th:if="${trackingLinks != null and trackingLinks.hasAnyLink()}">
+                        <a class="button button--whatsapp"
+                           th:if="${trackingLinks.hasWhatsApp()}"
+                           th:href="${trackingLinks.whatsappUrl}"
+                           target="_blank"
+                           rel="noopener"
+                           th:text="#{communication.channel.whatsapp}"></a>
+                        <a class="button button--sms"
+                           th:if="${trackingLinks.hasSms()}"
+                           th:href="${trackingLinks.smsUrl}"
+                           th:text="#{communication.channel.sms}"></a>
+                    </div>
+                    <div class="communication-actions" th:if="${trackingLinks == null or !trackingLinks.hasAnyLink()}">
+                        <span class="button button--disabled" th:text="#{communication.channel.whatsapp}"></span>
+                        <span class="button button--disabled" th:text="#{communication.channel.sms}"></span>
+                    </div>
+                    <p class="communication-unavailable"
+                       th:if="${trackingLinks == null or !trackingLinks.hasAnyLink()}"
+                       th:text="#{communication.phoneUnavailable}"></p>
+                </section>
+
+                <section class="communication-block" th:if="${pickupLinks != null}">
+                    <div class="communication-block__header">
+                        <strong class="communication-block__title" th:text="#{communication.pickup.title}"></strong>
+                        <span class="communication-target" th:if="${pickupLinks.targetPhone != null}">
+                            <span th:text="#{communication.targetPhone}"></span>
+                            <strong th:text="${pickupLinks.targetPhone}"></strong>
+                        </span>
+                    </div>
+                    <div class="communication-actions" th:if="${pickupLinks.hasAnyLink()}">
+                        <a class="button button--whatsapp"
+                           th:if="${pickupLinks.hasWhatsApp()}"
+                           th:href="${pickupLinks.whatsappUrl}"
+                           target="_blank"
+                           rel="noopener"
+                           th:text="#{communication.channel.whatsapp}"></a>
+                        <a class="button button--sms"
+                           th:if="${pickupLinks.hasSms()}"
+                           th:href="${pickupLinks.smsUrl}"
+                           th:text="#{communication.channel.sms}"></a>
+                    </div>
+                    <div class="communication-actions" th:if="${!pickupLinks.hasAnyLink()}">
+                        <span class="button button--disabled" th:text="#{communication.channel.whatsapp}"></span>
+                        <span class="button button--disabled" th:text="#{communication.channel.sms}"></span>
+                    </div>
+                    <p class="communication-unavailable"
+                       th:if="${!pickupLinks.hasAnyLink()}"
+                       th:text="#{communication.phoneUnavailable}"></p>
+                </section>
             </div>
         </article>
 
@@ -111,7 +163,6 @@
             <div class="section-card__copy">
                 <span class="section-kicker" th:text="#{repairs.detail.history.eyebrow}"></span>
                 <h2 th:text="#{repairs.detail.history.title}"></h2>
-                <p class="muted-copy" th:text="#{repairs.detail.history.subtitle}"></p>
             </div>
         </div>
 
@@ -132,6 +183,8 @@
             </article>
         </div>
     </section>
+
+    <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
 </body>
 </html>

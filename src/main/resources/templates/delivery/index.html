@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${currentLanguage}" th:dir="${textDirection}">
+<head th:replace="~{fragments/head :: appHead(#{page.title.delivery})}"></head>
+<body class="dashboard-page">
+<main class="page-shell">
+    <div th:replace="~{fragments/ui :: tenantHeader(${shop}, 'delivery')}"></div>
+
+    <section class="page-hero">
+        <div class="page-hero__copy">
+            <span class="section-kicker" th:text="#{delivery.page.eyebrow}"></span>
+            <h1 th:text="#{delivery.page.title}"></h1>
+        </div>
+        <div class="page-hero__actions">
+            <a class="button button--ghost" th:href="@{|/${shop.slug}/items|}" th:text="#{tenant.nav.repairs}"></a>
+        </div>
+    </section>
+
+    <section class="section-card">
+        <div class="section-card__header">
+            <div class="section-card__copy">
+                <span class="section-kicker" th:text="#{delivery.search.eyebrow}"></span>
+                <h2 th:text="#{delivery.search.title}"></h2>
+            </div>
+        </div>
+
+        <div class="notice success" th:if="${deliveryFeedback == 'delivered'}" th:text="#{delivery.feedback.delivered}"></div>
+        <div class="notice success" th:if="${deliveryFeedback == 'already-delivered'}" th:text="#{delivery.feedback.alreadyDelivered}"></div>
+        <div class="notice error" th:if="${deliveryFeedback == 'not-ready'}" th:text="#{delivery.feedback.notReady}"></div>
+
+        <form class="search-inline search-inline--delivery"
+              method="get"
+              th:action="@{|/${shop.slug}/delivery|}"
+              th:attr="data-suggestions-url=@{|/${shop.slug}/delivery/suggestions|}">
+            <input type="hidden" name="repairId" data-delivery-repair-id>
+            <div class="delivery-search">
+                <label class="field search-inline__field">
+                    <span th:text="#{delivery.search.field.label}"></span>
+                    <div class="input-hint">
+                        <input type="text"
+                               id="delivery-search-input"
+                               name="query"
+                               th:value="${query}"
+                               th:placeholder="#{delivery.search.field.placeholder}"
+                               autocomplete="off"
+                               spellcheck="false"
+                               aria-autocomplete="list"
+                               aria-controls="delivery-suggestions"
+                               aria-expanded="false"
+                               data-delivery-query>
+                    </div>
+                </label>
+                <div class="autocomplete-panel"
+                     id="delivery-suggestions"
+                     hidden
+                     data-delivery-suggestions></div>
+            </div>
+            <button class="button button--primary search-inline__button" type="submit" th:text="#{delivery.search.submit}"></button>
+        </form>
+    </section>
+
+    <section class="section-card" th:if="${deliveryResult != null}">
+        <div class="section-card__header">
+            <div class="section-card__copy">
+                <span class="section-kicker" th:text="#{delivery.result.eyebrow}"></span>
+                <h2 th:text="#{delivery.result.title}"></h2>
+            </div>
+        </div>
+
+        <article class="delivery-result-card">
+            <div class="repair-row__identity">
+                <a class="repair-row__preview"
+                   th:href="@{|/${shop.slug}/items/${deliveryResult.id}|}"
+                   th:if="${deliveryResult.image != null}">
+                    <img class="repair-row__image"
+                         th:src="@{|/${shop.slug}/items/${deliveryResult.id}/image|}"
+                         th:alt="${deliveryResult.title}">
+                </a>
+                <div class="repair-row__preview repair-row__preview--empty" th:if="${deliveryResult.image == null}">
+                    <span th:text="#{repairs.list.image.empty}"></span>
+                </div>
+                <div class="entity-row__title-group">
+                    <a class="entity-row__title"
+                       th:href="@{|/${shop.slug}/items/${deliveryResult.id}|}"
+                       th:text="${deliveryResult.title}"></a>
+                    <p class="entity-row__subtitle" th:text="${deliveryResult.customerName}"></p>
+                </div>
+            </div>
+
+            <div class="delivery-result-card__status">
+                <span class="status-badge"
+                      th:classappend="| status--${deliveryResult.status.name()}|"
+                      th:text="${#messages.msg('repair.status.' + deliveryResult.status.name())}"></span>
+            </div>
+
+            <div class="entity-row__meta">
+                <div class="meta-pill">
+                    <span th:text="#{repairs.field.pickupCode}"></span>
+                    <strong th:text="${deliveryResult.pickupCode}"></strong>
+                </div>
+                <div class="meta-pill" th:if="${deliveryResult.displayPhone() != null}">
+                    <span th:text="#{delivery.result.contact}"></span>
+                    <strong th:text="${deliveryResult.displayPhone()}"></strong>
+                </div>
+                <div class="meta-pill">
+                    <span th:text="#{repairs.field.expectedDeliveryDate}"></span>
+                    <strong th:text="${deliveryResult.expectedDeliveryDate != null ? #temporals.format(deliveryResult.expectedDeliveryDate, #messages.msg('format.date')) : #messages.msg('app.notAvailable')}"></strong>
+                </div>
+            </div>
+
+            <p class="delivery-result-card__note" th:if="${deliveryResult.canMarkDelivered()}" th:text="#{delivery.result.readyNote}"></p>
+            <p class="delivery-result-card__note" th:if="${deliveryResult.isDelivered()}" th:text="#{delivery.result.deliveredNote}"></p>
+            <p class="delivery-result-card__note" th:if="${!deliveryResult.canMarkDelivered() and !deliveryResult.isDelivered()}" th:text="#{delivery.result.notReadyNote}"></p>
+
+            <div class="communication-block communication-block--compact" th:if="${pickupMessageLinks != null}">
+                <div class="communication-block__header">
+                    <strong class="communication-block__title" th:text="#{communication.pickup.title}"></strong>
+                    <span class="communication-target" th:if="${pickupMessageLinks.targetPhone != null}">
+                        <span th:text="#{communication.targetPhone}"></span>
+                        <strong th:text="${pickupMessageLinks.targetPhone}"></strong>
+                    </span>
+                </div>
+                <div class="communication-actions" th:if="${pickupMessageLinks.hasAnyLink()}">
+                    <a class="button button--whatsapp"
+                       th:if="${pickupMessageLinks.hasWhatsApp()}"
+                       th:href="${pickupMessageLinks.whatsappUrl}"
+                       target="_blank"
+                       rel="noopener"
+                       th:text="#{communication.channel.whatsapp}"></a>
+                    <a class="button button--sms"
+                       th:if="${pickupMessageLinks.hasSms()}"
+                       th:href="${pickupMessageLinks.smsUrl}"
+                       th:text="#{communication.channel.sms}"></a>
+                </div>
+                <div class="communication-actions" th:if="${!pickupMessageLinks.hasAnyLink()}">
+                    <span class="button button--disabled" th:text="#{communication.channel.whatsapp}"></span>
+                    <span class="button button--disabled" th:text="#{communication.channel.sms}"></span>
+                </div>
+                <p class="communication-unavailable"
+                   th:if="${!pickupMessageLinks.hasAnyLink()}"
+                   th:text="#{communication.phoneUnavailable}"></p>
+            </div>
+
+            <div class="page-hero__actions">
+                <a class="button button--ghost" th:href="@{|/${shop.slug}/items/${deliveryResult.id}|}" th:text="#{delivery.result.openRepair}"></a>
+                <form th:if="${deliveryResult.canMarkDelivered()}"
+                      th:action="@{|/${shop.slug}/delivery/${deliveryResult.id}/deliver|}"
+                      method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="hidden" name="query" th:value="${query}">
+                    <input type="hidden" name="selectedRepairId" th:value="${deliveryResult.id}">
+                    <button class="button button--primary" type="submit" th:text="#{delivery.result.deliver}"></button>
+                </form>
+            </div>
+        </article>
+    </section>
+
+    <section class="section-card" th:if="${lookupAttempted and deliveryResult == null}">
+        <div class="empty-state">
+            <h3 th:text="#{delivery.result.empty.title}"></h3>
+            <p th:text="#{delivery.result.empty.body}"></p>
+        </div>
+    </section>
+
+    <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
+</main>
+<script th:inline="javascript">
+    (() => {
+        const form = document.querySelector('.search-inline--delivery');
+        if (!form) {
+            return;
+        }
+
+        const input = form.querySelector('[data-delivery-query]');
+        const repairIdInput = form.querySelector('[data-delivery-repair-id]');
+        const panel = form.querySelector('[data-delivery-suggestions]');
+        const suggestionsUrl = form.dataset.suggestionsUrl;
+        const minCharacters = 2;
+        const statusLabels = {
+            RECEIVED: /*[[#{repair.status.RECEIVED}]]*/ 'Received',
+            DIAGNOSING: /*[[#{repair.status.DIAGNOSING}]]*/ 'Diagnosing',
+            WAITING_FOR_PARTS: /*[[#{repair.status.WAITING_FOR_PARTS}]]*/ 'Waiting for parts',
+            IN_REPAIR: /*[[#{repair.status.IN_REPAIR}]]*/ 'In repair',
+            READY_FOR_PICKUP: /*[[#{repair.status.READY_FOR_PICKUP}]]*/ 'Ready for pickup',
+            DELIVERED: /*[[#{repair.status.DELIVERED}]]*/ 'Delivered',
+            CANCELLED: /*[[#{repair.status.CANCELLED}]]*/ 'Cancelled'
+        };
+        const loadingText = /*[[#{delivery.search.suggestions.loading}]]*/ 'Searching...';
+        const emptyText = /*[[#{delivery.search.suggestions.empty}]]*/ 'No matching repairs found.';
+        const notAvailableText = /*[[#{app.notAvailable}]]*/ 'Not available';
+        let currentSuggestions = [];
+        let activeIndex = -1;
+        let debounceHandle = null;
+        let currentAbortController = null;
+
+        const closePanel = () => {
+            panel.hidden = true;
+            panel.innerHTML = '';
+            input.setAttribute('aria-expanded', 'false');
+            currentSuggestions = [];
+            activeIndex = -1;
+        };
+
+        const openPanel = () => {
+            panel.hidden = false;
+            input.setAttribute('aria-expanded', 'true');
+        };
+
+        const renderState = (message) => {
+            panel.innerHTML = '';
+            const state = document.createElement('div');
+            state.className = 'autocomplete-panel__state';
+            state.textContent = message;
+            panel.appendChild(state);
+            openPanel();
+        };
+
+        const buildStatusBadge = (status) => {
+            const badge = document.createElement('span');
+            badge.className = `status-badge status-badge--compact status--${status}`;
+            badge.textContent = statusLabels[status] || status;
+            return badge;
+        };
+
+        const displayPhone = (suggestion) => suggestion.primaryPhone || suggestion.secondaryPhone || notAvailableText;
+
+        const chooseSuggestion = (suggestion) => {
+            repairIdInput.value = suggestion.repairId;
+            form.requestSubmit();
+        };
+
+        const highlightActiveSuggestion = () => {
+            const options = panel.querySelectorAll('.autocomplete-option');
+            options.forEach((option, index) => {
+                option.classList.toggle('is-active', index === activeIndex);
+            });
+        };
+
+        const renderSuggestions = (suggestions) => {
+            panel.innerHTML = '';
+            currentSuggestions = suggestions;
+            activeIndex = -1;
+
+            if (suggestions.length === 0) {
+                renderState(emptyText);
+                return;
+            }
+
+            suggestions.forEach((suggestion, index) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'autocomplete-option';
+                button.dataset.index = String(index);
+
+                const topRow = document.createElement('div');
+                topRow.className = 'autocomplete-option__top';
+
+                const titleGroup = document.createElement('div');
+                titleGroup.className = 'autocomplete-option__title-group';
+
+                const customerName = document.createElement('strong');
+                customerName.className = 'autocomplete-option__customer';
+                customerName.textContent = suggestion.customerName;
+
+                const phone = document.createElement('span');
+                phone.className = 'autocomplete-option__phone';
+                phone.textContent = displayPhone(suggestion);
+
+                titleGroup.appendChild(customerName);
+                titleGroup.appendChild(phone);
+                topRow.appendChild(titleGroup);
+                topRow.appendChild(buildStatusBadge(suggestion.status));
+
+                const meta = document.createElement('div');
+                meta.className = 'autocomplete-option__meta';
+
+                const pickupChip = document.createElement('span');
+                pickupChip.className = 'autocomplete-chip';
+                pickupChip.textContent = suggestion.pickupCode;
+
+                const repairChip = document.createElement('span');
+                repairChip.className = 'autocomplete-chip';
+                repairChip.textContent = suggestion.repairTitle;
+
+                meta.appendChild(pickupChip);
+                meta.appendChild(repairChip);
+
+                button.appendChild(topRow);
+                button.appendChild(meta);
+                button.addEventListener('click', () => chooseSuggestion(suggestion));
+
+                panel.appendChild(button);
+            });
+
+            openPanel();
+        };
+
+        const fetchSuggestions = async (value) => {
+            if (currentAbortController) {
+                currentAbortController.abort();
+            }
+
+            currentAbortController = new AbortController();
+            renderState(loadingText);
+
+            try {
+                const response = await fetch(`${suggestionsUrl}?q=${encodeURIComponent(value)}`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    signal: currentAbortController.signal,
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    closePanel();
+                    return;
+                }
+
+                const suggestions = await response.json();
+                renderSuggestions(suggestions);
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    closePanel();
+                }
+            }
+        };
+
+        input.addEventListener('input', () => {
+            repairIdInput.value = '';
+            const value = input.value.trim();
+
+            if (debounceHandle) {
+                window.clearTimeout(debounceHandle);
+            }
+
+            if (value.length < minCharacters) {
+                closePanel();
+                return;
+            }
+
+            debounceHandle = window.setTimeout(() => {
+                fetchSuggestions(value);
+            }, 160);
+        });
+
+        input.addEventListener('keydown', (event) => {
+            if (panel.hidden || currentSuggestions.length === 0) {
+                return;
+            }
+
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                activeIndex = (activeIndex + 1) % currentSuggestions.length;
+                highlightActiveSuggestion();
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                activeIndex = (activeIndex - 1 + currentSuggestions.length) % currentSuggestions.length;
+                highlightActiveSuggestion();
+            } else if (event.key === 'Enter' && activeIndex >= 0) {
+                event.preventDefault();
+                chooseSuggestion(currentSuggestions[activeIndex]);
+            } else if (event.key === 'Escape') {
+                closePanel();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!form.contains(event.target)) {
+                closePanel();
+            }
+        });
+    })();
+</script>
+</body>
+</html>

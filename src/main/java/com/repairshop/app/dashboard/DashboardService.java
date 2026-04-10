@@ -15,13 +15,6 @@ import java.util.List;
 @Service
 public class DashboardService {
 
-    private static final List<RepairItemStatus> ACTIVE_STATUSES = List.of(
-            RepairItemStatus.RECEIVED,
-            RepairItemStatus.DIAGNOSING,
-            RepairItemStatus.WAITING_FOR_PARTS,
-            RepairItemStatus.IN_REPAIR
-    );
-
     private final CustomerRepository customerRepository;
     private final RepairItemRepository repairItemRepository;
     private final RepairStatusHistoryRepository repairStatusHistoryRepository;
@@ -39,7 +32,7 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public DashboardView getDashboard(Long shopId) {
         long totalCustomers = customerRepository.countByShopId(shopId);
-        long activeRepairs = repairItemRepository.countByShopIdAndStatusIn(shopId, ACTIVE_STATUSES);
+        long activeRepairs = repairItemRepository.countByShopIdAndStatusIn(shopId, RepairItemStatus.activeDashboardStatuses());
         long readyForPickup = repairItemRepository.countByShopIdAndStatus(shopId, RepairItemStatus.READY_FOR_PICKUP);
         long deliveredRecently = repairStatusHistoryRepository.countDistinctRepairItemsByStatusSince(
                 shopId,

@@ -5,16 +5,20 @@ import com.repairshop.app.customer.CustomerNotFoundException;
 import com.repairshop.app.customer.CustomerRepository;
 import com.repairshop.app.media.RepairImageStorageService;
 import com.repairshop.app.media.RepairImageSummaryView;
+import com.repairshop.app.media.StoredRepairImageContent;
 import com.repairshop.app.shop.ShopRepository;
 import com.repairshop.app.user.ShopUser;
 import com.repairshop.app.user.ShopUserRepository;
 import com.repairshop.app.web.form.RepairItemForm;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -22,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class RepairService {
 
     private static final char[] PICKUP_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ".toCharArray();
+    private static final int DELIVERY_SUGGESTION_LIMIT = 8;
 
     private final RepairItemRepository repairItemRepository;
     private final RepairStatusHistoryRepository repairStatusHistoryRepository;
@@ -48,7 +53,13 @@ public class RepairService {
 
     @Transactional(readOnly = true)
     public List<RepairListItemView> listForShop(Long shopId) {
-        return repairItemRepository.findAllByShopIdWithCustomerOrderByUpdatedAtDesc(shopId).stream()
+        List<RepairItem> repairs = repairItemRepository.findAllByShopIdWithCustomerOrderByUpdatedAtDesc(shopId);
+        java.util.Map<Long, RepairImageSummaryView> imageByRepairId = repairImageStorageService.findSummariesByRepairIds(
+                shopId,
+                repairs.stream().map(RepairItem::getId).toList()
+        );
+
+        return repairs.stream()
                 .map(item -> new RepairListItemView(
                         item.getId(),
                         item.getTitle(),
@@ -56,7 +67,8 @@ public class RepairService {
                         item.getStatus(),
                         item.getExpectedDeliveryDate(),
                         item.getPickupCode(),
-                        item.getRemainingBalance()
+                        item.getRemainingBalance(),
+                        imageByRepairId.get(item.getId())
                 ))
                 .toList();
     }
@@ -67,7 +79,8 @@ public class RepairService {
                 .map(customer -> new CustomerOptionView(
                         customer.getId(),
                         customer.getFullName(),
-                        customer.getPrimaryPhone()
+                        customer.getPrimaryPhone(),
+                        customer.getSecondaryPhone()
                 ))
                 .toList();
     }
@@ -102,7 +115,8 @@ public class RepairService {
                 new CustomerOptionView(
                         item.getCustomer().getId(),
                         item.getCustomer().getFullName(),
-                        item.getCustomer().getPrimaryPhone()
+                        item.getCustomer().getPrimaryPhone(),
+                        item.getCustomer().getSecondaryPhone()
                 ),
                 history
         );
@@ -130,6 +144,73 @@ public class RepairService {
     }
 
     @Transactional(readOnly = true)
+    public java.util.Optional<DeliverySearchResultView> findForDeliveryByPickupCode(Long shopId, String pickupCode) {
+        String normalizedPickupCode = normalizePickupCode(pickupCode);
+        if (normalizedPickupCode == null) {
+            return java.util.Optional.empty();
+        }
+
+        return repairItemRepository.findByPickupCodeAndShopIdWithCustomer(normalizedPickupCode, shopId)
+                .map(item -> toDeliveryResult(shopId, item));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<DeliverySearchResultView> findForDelivery(Long shopId, String query, Long repairId) {
+        if (repairId != null) {
+            return repairItemRepository.findDetailedByIdAndShopId(repairId, shopId)
+                    .map(item -> toDeliveryResult(shopId, item));
+        }
+
+        DeliverySearchTerm searchTerm = DeliverySearchTerm.from(query);
+        if (searchTerm == null) {
+            return Optional.empty();
+        }
+
+        Optional<DeliverySearchResultView> exactPickupMatch = findForDeliveryByPickupCode(shopId, searchTerm.rawQuery());
+        if (exactPickupMatch.isPresent()) {
+            return exactPickupMatch;
+        }
+
+        return repairItemRepository.searchDeliveryMatches(
+                        shopId,
+                        searchTerm.lowerQuery(),
+                        searchTerm.upperQuery(),
+                        searchTerm.digitsQuery(),
+                        searchTerm.phoneSearch(),
+                        PageRequest.of(0, 1)
+                ).stream()
+                .findFirst()
+                .map(item -> toDeliveryResult(shopId, item));
+    }
+
+    @Transactional(readOnly = true)
+    public List<DeliverySearchSuggestionView> suggestForDelivery(Long shopId, String query) {
+        DeliverySearchTerm searchTerm = DeliverySearchTerm.from(query);
+        if (searchTerm == null || searchTerm.rawQuery().length() < 2) {
+            return List.of();
+        }
+
+        return repairItemRepository.searchDeliveryMatches(
+                        shopId,
+                        searchTerm.lowerQuery(),
+                        searchTerm.upperQuery(),
+                        searchTerm.digitsQuery(),
+                        searchTerm.phoneSearch(),
+                        PageRequest.of(0, DELIVERY_SUGGESTION_LIMIT)
+                ).stream()
+                .map(item -> new DeliverySearchSuggestionView(
+                        item.getId(),
+                        item.getTitle(),
+                        item.getCustomer().getFullName(),
+                        item.getCustomer().getPrimaryPhone(),
+                        item.getCustomer().getSecondaryPhone(),
+                        item.getPickupCode(),
+                        item.getStatus()
+                ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public java.util.Optional<PublicTrackingView> findPublicTracking(String token) {
         if (token == null || token.isBlank()) {
             return java.util.Optional.empty();
@@ -140,8 +221,21 @@ public class RepairService {
                         item.getShop().getBusinessName(),
                         item.getTitle(),
                         item.getStatus(),
-                        item.getExpectedDeliveryDate()
+                        item.getExpectedDeliveryDate(),
+                        item.getPickupCode(),
+                        item.getPublicTrackingToken(),
+                        repairImageStorageService.findContentForRepair(item.getShop().getId(), item.getId()).isPresent()
                 ));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<StoredRepairImageContent> loadPublicTrackingImage(String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+
+        return repairItemRepository.findByPublicTrackingToken(token)
+                .flatMap(item -> repairImageStorageService.findContentForRepair(item.getShop().getId(), item.getId()));
     }
 
     @Transactional
@@ -172,9 +266,42 @@ public class RepairService {
         }
     }
 
+    @Transactional
+    public boolean markDelivered(Long shopId, Long userId, Long repairId) {
+        RepairItem item = repairItemRepository.findByIdAndShopId(repairId, shopId)
+                .orElseThrow(() -> new RepairItemNotFoundException(repairId));
+
+        if (item.getStatus().isDelivered()) {
+            return false;
+        }
+        if (!item.getStatus().canBeMarkedDelivered()) {
+            throw new RepairNotReadyForDeliveryException(item.getStatus());
+        }
+
+        item.setStatus(RepairItemStatus.DELIVERED);
+        repairItemRepository.save(item);
+        createHistoryEntry(item, resolveActor(shopId, userId), RepairItemStatus.DELIVERED);
+        return true;
+    }
+
     private RepairItem getDetailedRepair(Long shopId, Long repairId) {
         return repairItemRepository.findDetailedByIdAndShopId(repairId, shopId)
                 .orElseThrow(() -> new RepairItemNotFoundException(repairId));
+    }
+
+    private DeliverySearchResultView toDeliveryResult(Long shopId, RepairItem item) {
+        return new DeliverySearchResultView(
+                item.getId(),
+                item.getTitle(),
+                item.getCustomer().getFullName(),
+                item.getCustomer().getPrimaryPhone(),
+                item.getCustomer().getSecondaryPhone(),
+                item.getStatus(),
+                item.getExpectedDeliveryDate(),
+                item.getPickupCode(),
+                item.getPublicTrackingToken(),
+                repairImageStorageService.findSummary(shopId, item.getId()).orElse(null)
+        );
     }
 
     private void applyForm(RepairItem item, Long shopId, RepairItemForm form) {
@@ -245,5 +372,42 @@ public class RepairService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizePickupCode(String pickupCode) {
+        if (pickupCode == null) {
+            return null;
+        }
+        String normalized = pickupCode.trim().toUpperCase(Locale.ROOT);
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private record DeliverySearchTerm(
+            String rawQuery,
+            String lowerQuery,
+            String upperQuery,
+            String digitsQuery,
+            boolean phoneSearch
+    ) {
+
+        private static DeliverySearchTerm from(String query) {
+            if (query == null) {
+                return null;
+            }
+
+            String trimmed = query.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+
+            String digits = trimmed.replaceAll("\\D+", "");
+            return new DeliverySearchTerm(
+                    trimmed,
+                    trimmed.toLowerCase(Locale.ROOT),
+                    trimmed.toUpperCase(Locale.ROOT),
+                    digits,
+                    !digits.isEmpty()
+            );
+        }
     }
 }
