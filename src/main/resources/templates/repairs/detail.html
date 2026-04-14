@@ -58,6 +58,12 @@
                     <strong th:text="${#numbers.formatDecimal(repair.remainingBalance, 1, 2)}"></strong>
                 </div>
             </div>
+            <div class="notice error"
+                 th:if="${repair.status == T(com.repairshop.app.repair.RepairItemStatus).READY_FOR_PICKUP and repair.hasOutstandingBalance()}"
+                 th:text="#{repairs.detail.deliveryBlocked}"></div>
+            <div class="notice success"
+                 th:if="${repair.status == T(com.repairshop.app.repair.RepairItemStatus).READY_FOR_PICKUP and !repair.hasOutstandingBalance()}"
+                 th:text="#{repairs.detail.deliveryReady}"></div>
         </article>
 
         <article class="detail-card">
@@ -91,6 +97,7 @@
                         th:if="${pickupLinks != null}"
                         th:text="#{communication.open.pickup}"></button>
             </div>
+            <p class="communication-helper" th:text="#{communication.link.helper}"></p>
         </article>
 
         <article class="detail-card">
@@ -133,6 +140,8 @@
     <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
 
+<div class="floating-feedback" hidden data-communication-feedback></div>
+
 <div class="modal-backdrop"
      hidden
      data-communication-modal
@@ -152,6 +161,7 @@
         data-whatsapp-label=#{communication.channel.whatsapp},
         data-sms-label=#{communication.channel.sms},
         data-cancel-label=#{common.cancel},
+        data-feedback-message=#{communication.link.feedback},
         data-target-label=#{communication.targetPhone},
         data-unavailable-label=#{communication.prompt.unavailable}">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="communication-modal-title">
@@ -192,6 +202,7 @@
         const sms = modal.querySelector('[data-communication-sms]');
         const closeButton = modal.querySelector('[data-communication-close]');
         const triggers = document.querySelectorAll('[data-communication-open]');
+        const feedback = document.querySelector('[data-communication-feedback]');
         const configs = {
             tracking: {
                 title: modal.dataset.trackingTitle,
@@ -251,6 +262,25 @@
             document.body.classList.remove('modal-open');
         };
 
+        let feedbackTimer = null;
+
+        const showFeedback = () => {
+            if (!feedback) {
+                return;
+            }
+
+            feedback.textContent = modal.dataset.feedbackMessage || '';
+            feedback.hidden = false;
+            feedback.classList.add('is-visible');
+            if (feedbackTimer) {
+                window.clearTimeout(feedbackTimer);
+            }
+            feedbackTimer = window.setTimeout(() => {
+                feedback.hidden = true;
+                feedback.classList.remove('is-visible');
+            }, 3200);
+        };
+
         const handleCloseInteraction = (event) => {
             if (event) {
                 event.preventDefault();
@@ -266,8 +296,14 @@
         });
 
         closeButton.addEventListener('click', handleCloseInteraction);
-        whatsapp.addEventListener('click', closeModal);
-        sms.addEventListener('click', closeModal);
+        whatsapp.addEventListener('click', () => {
+            showFeedback();
+            closeModal();
+        });
+        sms.addEventListener('click', () => {
+            showFeedback();
+            closeModal();
+        });
         modal.addEventListener('click', (event) => {
             if (event.target === modal) {
                 handleCloseInteraction(event);

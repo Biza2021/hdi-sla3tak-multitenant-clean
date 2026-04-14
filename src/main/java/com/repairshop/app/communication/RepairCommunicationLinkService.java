@@ -111,7 +111,12 @@ public class RepairCommunicationLinkService {
         if (targetPhone == null) {
             return null;
         }
-        return "https://wa.me/" + targetPhone + "?text=" + UriUtils.encodeQueryParam(message, StandardCharsets.UTF_8);
+        return UriComponentsBuilder.fromUriString("https://api.whatsapp.com/send")
+                .queryParam("phone", targetPhone)
+                .queryParam("text", message)
+                .build()
+                .encode(StandardCharsets.UTF_8)
+                .toUriString();
     }
 
     private String buildSmsUrl(String phoneNumber, String message) {

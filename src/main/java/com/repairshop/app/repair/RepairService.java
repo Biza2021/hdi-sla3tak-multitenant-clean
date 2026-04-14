@@ -134,7 +134,7 @@ public class RepairService {
         form.setExpectedDeliveryDate(item.getExpectedDeliveryDate());
         form.setEstimatedPrice(item.getEstimatedPrice());
         form.setDepositPaid(item.getDepositPaid());
-        form.setRemainingBalance(item.getRemainingBalance());
+        form.setRemainingBalance(calculateRemainingBalance(item.getEstimatedPrice(), item.getDepositPaid()));
         return form;
     }
 
@@ -270,21 +270,65 @@ public class RepairService {
     }
 
     @Transactional
-    public boolean markDelivered(Long shopId, Long userId, Long repairId) {
+    public DeliveryCompletionOutcome completeDelivery(
+            Long shopId,
+            Long userId,
+            Long repairId,
+            DeliverySettlementChoice settlementChoice,
+            BigDecimal paymentReceivedNow
+    ) {
         RepairItem item = repairItemRepository.findByIdAndShopId(repairId, shopId)
                 .orElseThrow(() -> new RepairItemNotFoundException(repairId));
 
         if (item.getStatus().isDelivered()) {
-            return false;
+            return DeliveryCompletionOutcome.ALREADY_DELIVERED;
         }
         if (!item.getStatus().canBeMarkedDelivered()) {
             throw new RepairNotReadyForDeliveryException(item.getStatus());
         }
 
-        item.setStatus(RepairItemStatus.DELIVERED);
+        BigDecimal remainingBalance = normalizeMoney(item.getRemainingBalance());
+        if (remainingBalance.signum() <= 0) {
+            markAsDelivered(item, resolveActor(shopId, userId));
+            return DeliveryCompletionOutcome.DELIVERED;
+        }
+
+        DeliverySettlementChoice normalizedChoice = settlementChoice == null
+                ? DeliverySettlementChoice.UNPAID
+                : settlementChoice;
+
+        if (normalizedChoice == DeliverySettlementChoice.UNPAID) {
+            return DeliveryCompletionOutcome.PAYMENT_REQUIRED;
+        }
+
+        if (normalizedChoice == DeliverySettlementChoice.FULLY_PAID) {
+            applyCollectedAmount(item, remainingBalance);
+            markAsDelivered(item, resolveActor(shopId, userId));
+            return DeliveryCompletionOutcome.DELIVERED;
+        }
+
+        BigDecimal collectedAmount = normalizeMoney(paymentReceivedNow);
+        if (collectedAmount.signum() <= 0 || collectedAmount.compareTo(remainingBalance) > 0) {
+            return DeliveryCompletionOutcome.INVALID_SETTLEMENT;
+        }
+        if (collectedAmount.compareTo(remainingBalance) == 0) {
+            applyCollectedAmount(item, collectedAmount);
+            markAsDelivered(item, resolveActor(shopId, userId));
+            return DeliveryCompletionOutcome.DELIVERED;
+        }
+
+        applyCollectedAmount(item, collectedAmount);
         repairItemRepository.save(item);
-        createHistoryEntry(item, resolveActor(shopId, userId), RepairItemStatus.DELIVERED);
-        return true;
+        return DeliveryCompletionOutcome.PARTIAL_PAYMENT_RECORDED;
+    }
+
+    public BigDecimal previewRemainingBalance(BigDecimal estimatedPrice, BigDecimal depositPaid) {
+        BigDecimal normalizedEstimatedPrice = normalizeMoney(estimatedPrice);
+        BigDecimal normalizedDepositPaid = normalizeMoney(depositPaid);
+        if (normalizedDepositPaid.compareTo(normalizedEstimatedPrice) >= 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return calculateRemainingBalance(normalizedEstimatedPrice, normalizedDepositPaid);
     }
 
     private RepairItem getDetailedRepair(Long shopId, Long repairId) {
@@ -303,6 +347,9 @@ public class RepairService {
                 item.getExpectedDeliveryDate(),
                 item.getPickupCode(),
                 item.getPublicTrackingToken(),
+                item.getEstimatedPrice(),
+                item.getDepositPaid(),
+                item.getRemainingBalance(),
                 repairImageStorageService.findSummary(shopId, item.getId()).orElse(null)
         );
     }
@@ -317,9 +364,32 @@ public class RepairService {
         item.setRepairNotes(normalizeNullable(form.getRepairNotes()));
         item.setStatus(form.getStatus());
         item.setExpectedDeliveryDate(form.getExpectedDeliveryDate());
-        item.setEstimatedPrice(normalizeMoney(form.getEstimatedPrice()));
-        item.setDepositPaid(normalizeMoney(form.getDepositPaid()));
-        item.setRemainingBalance(normalizeMoney(form.getRemainingBalance()));
+        BigDecimal estimatedPrice = normalizeMoney(form.getEstimatedPrice());
+        BigDecimal depositPaid = normalizeMoney(form.getDepositPaid());
+        if (depositPaid.compareTo(estimatedPrice) > 0) {
+            throw new RepairFormValidationException("depositPaid", "repair.deposit.exceedsEstimated");
+        }
+
+        BigDecimal remainingBalance = calculateRemainingBalance(estimatedPrice, depositPaid);
+        if (form.getStatus() == RepairItemStatus.DELIVERED && remainingBalance.signum() > 0) {
+            throw new RepairFormValidationException("status", "repair.status.deliveryRequiresSettlement");
+        }
+
+        item.setEstimatedPrice(estimatedPrice);
+        item.setDepositPaid(depositPaid);
+        item.setRemainingBalance(remainingBalance);
+    }
+
+    private void applyCollectedAmount(RepairItem item, BigDecimal collectedAmount) {
+        BigDecimal updatedDepositPaid = normalizeMoney(item.getDepositPaid()).add(normalizeMoney(collectedAmount));
+        item.setDepositPaid(updatedDepositPaid);
+        item.setRemainingBalance(calculateRemainingBalance(item.getEstimatedPrice(), updatedDepositPaid));
+    }
+
+    private void markAsDelivered(RepairItem item, ShopUser actor) {
+        item.setStatus(RepairItemStatus.DELIVERED);
+        repairItemRepository.save(item);
+        createHistoryEntry(item, actor, RepairItemStatus.DELIVERED);
     }
 
     private void createHistoryEntry(RepairItem item, ShopUser actor, RepairItemStatus status) {
@@ -363,6 +433,10 @@ public class RepairService {
 
     private BigDecimal normalizeMoney(BigDecimal value) {
         return (value == null ? BigDecimal.ZERO : value).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal calculateRemainingBalance(BigDecimal estimatedPrice, BigDecimal depositPaid) {
+        return normalizeMoney(estimatedPrice).subtract(normalizeMoney(depositPaid)).setScale(2, RoundingMode.HALF_UP);
     }
 
     private String normalizeRequired(String value) {

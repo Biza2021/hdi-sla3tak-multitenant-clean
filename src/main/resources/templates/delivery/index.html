@@ -25,7 +25,10 @@
 
         <div class="notice success" th:if="${deliveryFeedback == 'delivered'}" th:text="#{delivery.feedback.delivered}"></div>
         <div class="notice success" th:if="${deliveryFeedback == 'already-delivered'}" th:text="#{delivery.feedback.alreadyDelivered}"></div>
+        <div class="notice success" th:if="${deliveryFeedback == 'partial-recorded'}" th:text="#{delivery.feedback.partialRecorded}"></div>
         <div class="notice error" th:if="${deliveryFeedback == 'not-ready'}" th:text="#{delivery.feedback.notReady}"></div>
+        <div class="notice error" th:if="${deliveryFeedback == 'payment-due'}" th:text="#{delivery.feedback.paymentDue}"></div>
+        <div class="notice error" th:if="${deliveryFeedback == 'invalid-payment'}" th:text="#{delivery.feedback.invalidPayment}"></div>
 
         <form class="search-inline search-inline--delivery"
               method="get"
@@ -105,9 +108,22 @@
                     <span th:text="#{repairs.field.expectedDeliveryDate}"></span>
                     <strong th:text="${deliveryResult.expectedDeliveryDate != null ? #temporals.format(deliveryResult.expectedDeliveryDate, #messages.msg('format.date')) : #messages.msg('app.notAvailable')}"></strong>
                 </div>
+                <div class="meta-pill">
+                    <span th:text="#{delivery.result.estimatedPrice}"></span>
+                    <strong th:text="${#numbers.formatDecimal(deliveryResult.estimatedPrice, 1, 2)}"></strong>
+                </div>
+                <div class="meta-pill">
+                    <span th:text="#{delivery.result.amountPaid}"></span>
+                    <strong th:text="${#numbers.formatDecimal(deliveryResult.depositPaid, 1, 2)}"></strong>
+                </div>
+                <div class="meta-pill" th:classappend="${deliveryResult.hasOutstandingBalance()} ? ' meta-pill--due' : ' meta-pill--settled'">
+                    <span th:text="#{delivery.result.balanceDue}"></span>
+                    <strong th:text="${#numbers.formatDecimal(deliveryResult.remainingBalance, 1, 2)}"></strong>
+                </div>
             </div>
 
-            <p class="delivery-result-card__note" th:if="${deliveryResult.canMarkDelivered()}" th:text="#{delivery.result.readyNote}"></p>
+            <p class="delivery-result-card__note" th:if="${deliveryResult.canMarkDelivered() and !deliveryResult.hasOutstandingBalance()}" th:text="#{delivery.result.readyNote}"></p>
+            <p class="delivery-result-card__note" th:if="${deliveryResult.canMarkDelivered() and deliveryResult.hasOutstandingBalance()}" th:text="#{delivery.result.paymentRequiredNote}"></p>
             <p class="delivery-result-card__note" th:if="${deliveryResult.isDelivered()}" th:text="#{delivery.result.deliveredNote}"></p>
             <p class="delivery-result-card__note" th:if="${!deliveryResult.canMarkDelivered() and !deliveryResult.isDelivered()}" th:text="#{delivery.result.notReadyNote}"></p>
 
@@ -138,18 +154,78 @@
                 <p class="communication-unavailable"
                    th:if="${!pickupMessageLinks.hasAnyLink()}"
                    th:text="#{communication.phoneUnavailable}"></p>
+                <p class="communication-helper" th:text="#{communication.link.helper}"></p>
             </div>
 
-            <div class="page-hero__actions">
-                <a class="button button--ghost" th:href="@{|/${shop.slug}/items/${deliveryResult.id}|}" th:text="#{delivery.result.openRepair}"></a>
-                <form th:if="${deliveryResult.canMarkDelivered()}"
+            <section class="section-card section-card--nested" th:if="${deliveryResult.canMarkDelivered()}">
+                <div class="section-card__copy">
+                    <span class="section-kicker" th:text="#{delivery.settlement.eyebrow}"></span>
+                    <h2 th:text="#{delivery.settlement.title}"></h2>
+                </div>
+                <p class="delivery-result-card__note" th:text="#{delivery.settlement.body}"></p>
+
+                <form class="delivery-settlement-form"
+                      th:if="${deliveryResult.hasOutstandingBalance()}"
+                      th:action="@{|/${shop.slug}/delivery/${deliveryResult.id}/deliver|}"
+                      method="post"
+                      data-settlement-form>
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="hidden" name="query" th:value="${query}">
+                    <input type="hidden" name="selectedRepairId" th:value="${deliveryResult.id}">
+
+                    <div class="settlement-choice-grid">
+                        <label class="settlement-choice">
+                            <input type="radio" name="settlementChoice" value="FULLY_PAID" checked data-settlement-choice>
+                            <span class="settlement-choice__body">
+                                <strong th:text="#{delivery.settlement.choice.full}"></strong>
+                                <small th:text="#{delivery.settlement.choice.full.body}"></small>
+                            </span>
+                        </label>
+                        <label class="settlement-choice">
+                            <input type="radio" name="settlementChoice" value="PARTIALLY_PAID" data-settlement-choice>
+                            <span class="settlement-choice__body">
+                                <strong th:text="#{delivery.settlement.choice.partial}"></strong>
+                                <small th:text="#{delivery.settlement.choice.partial.body}"></small>
+                            </span>
+                        </label>
+                        <label class="settlement-choice">
+                            <input type="radio" name="settlementChoice" value="UNPAID" data-settlement-choice>
+                            <span class="settlement-choice__body">
+                                <strong th:text="#{delivery.settlement.choice.unpaid}"></strong>
+                                <small th:text="#{delivery.settlement.choice.unpaid.body}"></small>
+                            </span>
+                        </label>
+                    </div>
+
+                    <label class="field" hidden data-partial-payment-field>
+                        <span th:text="#{delivery.settlement.paymentReceivedNow}"></span>
+                        <input type="number"
+                               name="paymentReceivedNow"
+                               min="0"
+                               step="0.01"
+                               inputmode="decimal"
+                               th:placeholder="#{repairs.placeholder.money}">
+                    </label>
+
+                    <div class="form-actions form-actions--inline">
+                        <button class="button button--primary" type="submit" th:text="#{delivery.settlement.submit}"></button>
+                    </div>
+                </form>
+
+                <form th:if="${!deliveryResult.hasOutstandingBalance()}"
                       th:action="@{|/${shop.slug}/delivery/${deliveryResult.id}/deliver|}"
                       method="post">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                     <input type="hidden" name="query" th:value="${query}">
                     <input type="hidden" name="selectedRepairId" th:value="${deliveryResult.id}">
-                    <button class="button button--primary" type="submit" th:text="#{delivery.result.deliver}"></button>
+                    <div class="form-actions form-actions--inline">
+                        <button class="button button--primary" type="submit" th:text="#{delivery.result.deliver}"></button>
+                    </div>
                 </form>
+            </section>
+
+            <div class="page-hero__actions">
+                <a class="button button--ghost" th:href="@{|/${shop.slug}/items/${deliveryResult.id}|}" th:text="#{delivery.result.openRepair}"></a>
             </div>
         </article>
     </section>
@@ -163,6 +239,7 @@
 
     <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
+<div class="floating-feedback" hidden data-communication-feedback></div>
 <script th:inline="javascript">
     (() => {
         const form = document.querySelector('.search-inline--delivery');
@@ -187,10 +264,29 @@
         const loadingText = /*[[#{delivery.search.suggestions.loading}]]*/ 'Searching...';
         const emptyText = /*[[#{delivery.search.suggestions.empty}]]*/ 'No matching repairs found.';
         const notAvailableText = /*[[#{app.notAvailable}]]*/ 'Not available';
+        const messageFeedbackText = /*[[#{communication.link.feedback}]]*/ 'Message ready. Confirm and send in the messaging app.';
+        const feedback = document.querySelector('[data-communication-feedback]');
         let currentSuggestions = [];
         let activeIndex = -1;
         let debounceHandle = null;
         let currentAbortController = null;
+        let feedbackTimer = null;
+
+        const showFeedback = () => {
+            if (!feedback) {
+                return;
+            }
+            feedback.textContent = messageFeedbackText;
+            feedback.hidden = false;
+            feedback.classList.add('is-visible');
+            if (feedbackTimer) {
+                window.clearTimeout(feedbackTimer);
+            }
+            feedbackTimer = window.setTimeout(() => {
+                feedback.hidden = true;
+                feedback.classList.remove('is-visible');
+            }, 3200);
+        };
 
         const closePanel = () => {
             panel.hidden = true;
@@ -369,6 +465,34 @@
                 closePanel();
             }
         });
+
+        document.querySelectorAll('.communication-actions a').forEach((link) => {
+            link.addEventListener('click', showFeedback);
+        });
+
+        const settlementForm = document.querySelector('[data-settlement-form]');
+        if (settlementForm) {
+            const partialPaymentField = settlementForm.querySelector('[data-partial-payment-field]');
+            const settlementChoices = settlementForm.querySelectorAll('[data-settlement-choice]');
+            const partialPaymentInput = partialPaymentField?.querySelector('input');
+
+            const syncSettlementField = () => {
+                const selectedValue = settlementForm.querySelector('[data-settlement-choice]:checked')?.value;
+                const showPartialField = selectedValue === 'PARTIALLY_PAID';
+                partialPaymentField.hidden = !showPartialField;
+                if (partialPaymentInput) {
+                    partialPaymentInput.required = showPartialField;
+                    if (!showPartialField) {
+                        partialPaymentInput.value = '';
+                    }
+                }
+            };
+
+            settlementChoices.forEach((choice) => {
+                choice.addEventListener('change', syncSettlementField);
+            });
+            syncSettlementField();
+        }
     })();
 </script>
 </body>

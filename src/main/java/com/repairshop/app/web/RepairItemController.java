@@ -5,6 +5,7 @@ import com.repairshop.app.communication.RepairCommunicationLinkService;
 import com.repairshop.app.customer.CustomerNotFoundException;
 import com.repairshop.app.media.InvalidRepairImageException;
 import com.repairshop.app.repair.RepairDetailView;
+import com.repairshop.app.repair.RepairFormValidationException;
 import com.repairshop.app.repair.RepairItemStatus;
 import com.repairshop.app.repair.RepairService;
 import com.repairshop.app.security.AuthenticatedShopUser;
@@ -56,7 +57,11 @@ public class RepairItemController {
         AuthenticatedShopUser principal = CurrentUser.require(authentication);
         model.addAttribute("shop", loadShop(shopSlug));
         if (!model.containsAttribute("repairItemForm")) {
-            model.addAttribute("repairItemForm", new RepairItemForm());
+            RepairItemForm form = new RepairItemForm();
+            syncComputedRemainingBalance(form);
+            model.addAttribute("repairItemForm", form);
+        } else {
+            syncComputedRemainingBalance((RepairItemForm) model.asMap().get("repairItemForm"));
         }
         populateRepairFormModel(model, principal.shopId(), false, null);
         return "repairs/form";
@@ -73,6 +78,7 @@ public class RepairItemController {
     ) {
         AuthenticatedShopUser principal = CurrentUser.require(authentication);
         Shop shop = loadShop(shopSlug);
+        syncComputedRemainingBalance(form);
         if (bindingResult.hasErrors()) {
             model.addAttribute("shop", shop);
             populateRepairFormModel(model, principal.shopId(), false, null);
@@ -87,6 +93,8 @@ public class RepairItemController {
             bindingResult.rejectValue("customerId", "repair.customer.invalid");
         } catch (InvalidRepairImageException ex) {
             bindingResult.rejectValue("imageFile", ex.getMessageCode());
+        } catch (RepairFormValidationException ex) {
+            bindingResult.rejectValue(ex.getField(), ex.getMessageCode());
         }
 
         model.addAttribute("shop", shop);
@@ -143,6 +151,8 @@ public class RepairItemController {
         model.addAttribute("shop", loadShop(shopSlug));
         if (!model.containsAttribute("repairItemForm")) {
             model.addAttribute("repairItemForm", repairService.getForm(principal.shopId(), repairId));
+        } else {
+            syncComputedRemainingBalance((RepairItemForm) model.asMap().get("repairItemForm"));
         }
         populateRepairFormModel(model, principal.shopId(), true, repairId);
         return "repairs/form";
@@ -160,6 +170,7 @@ public class RepairItemController {
     ) {
         AuthenticatedShopUser principal = CurrentUser.require(authentication);
         Shop shop = loadShop(shopSlug);
+        syncComputedRemainingBalance(form);
         if (bindingResult.hasErrors()) {
             model.addAttribute("shop", shop);
             populateRepairFormModel(model, principal.shopId(), true, repairId);
@@ -176,6 +187,8 @@ public class RepairItemController {
             bindingResult.rejectValue("customerId", "repair.customer.invalid");
         } catch (InvalidRepairImageException ex) {
             bindingResult.rejectValue("imageFile", ex.getMessageCode());
+        } catch (RepairFormValidationException ex) {
+            bindingResult.rejectValue(ex.getField(), ex.getMessageCode());
         }
 
         model.addAttribute("shop", shop);
@@ -200,6 +213,10 @@ public class RepairItemController {
 
     private Shop loadShop(String shopSlug) {
         return shopService.getBySlugOrThrow(shopSlug);
+    }
+
+    private void syncComputedRemainingBalance(RepairItemForm form) {
+        form.setRemainingBalance(repairService.previewRemainingBalance(form.getEstimatedPrice(), form.getDepositPaid()));
     }
 
     private RepairCommunicationContext buildCommunicationContext(Shop shop, RepairDetailView repair) {

@@ -26,7 +26,8 @@
                   th:object="${repairItemForm}"
                   method="post"
                   enctype="multipart/form-data"
-                  class="stack">
+                  class="stack"
+                  data-money-form>
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                 <div class="form-grid">
@@ -71,16 +72,42 @@
 
                     <div class="field field--full field--file">
                         <span th:text="#{repairs.field.image}"></span>
-                        <input type="file"
-                               th:field="*{imageFile}"
-                               accept="image/jpeg,image/png,image/webp">
-                        <small th:if="${#fields.hasErrors('imageFile')}" th:errors="*{imageFile}"></small>
+                        <div class="compact-upload" th:classappend="${editing and existingImage != null} ? ' compact-upload--with-thumb' : ' compact-upload--empty'">
+                            <div class="compact-upload__current" th:if="${editing and existingImage != null}">
+                                <img class="compact-upload__thumb"
+                                     th:src="@{|/${shop.slug}/items/${repairId}/image|}"
+                                     th:alt="${repairItemForm.title != null ? repairItemForm.title : #messages.msg('repairs.detail.image.title')}">
+                                <div class="compact-upload__copy">
+                                    <strong th:text="#{repairs.form.image.current}"></strong>
+                                    <span th:text="${existingImage.originalFilename}"></span>
+                                </div>
+                            </div>
+                            <div class="compact-upload__current compact-upload__current--empty" th:if="${!editing or existingImage == null}">
+                                <strong th:text="#{repairs.form.image.none}"></strong>
+                            </div>
 
-                        <div class="upload-preview" th:if="${editing and existingImage != null}">
-                            <img class="repair-image"
-                                 th:src="@{|/${shop.slug}/items/${repairId}/image|}"
-                                 th:alt="${repairItemForm.title != null ? repairItemForm.title : #messages.msg('repairs.detail.image.title')}">
+                            <input class="visually-hidden-input"
+                                   type="file"
+                                   id="repair-image-input"
+                                   th:field="*{imageFile}"
+                                   accept="image/jpeg,image/png,image/webp"
+                                   data-image-input>
+
+                            <div class="compact-upload__actions">
+                                <label class="button button--ghost button--compact"
+                                       for="repair-image-input"
+                                       th:if="${editing and existingImage != null}"
+                                       th:text="#{repairs.form.image.change}"></label>
+                                <label class="button button--ghost button--compact"
+                                       for="repair-image-input"
+                                       th:if="${!editing or existingImage == null}"
+                                       th:text="#{repairs.form.image.choose}"></label>
+                                <span class="compact-upload__filename"
+                                      data-image-filename
+                                      th:text="${editing and existingImage != null ? existingImage.originalFilename : #messages.msg('repairs.form.image.none')}"></span>
+                            </div>
                         </div>
+                        <small th:if="${#fields.hasErrors('imageFile')}" th:errors="*{imageFile}"></small>
                     </div>
 
                     <label class="field">
@@ -91,24 +118,45 @@
 
                     <label class="field">
                         <span th:text="#{repairs.field.estimatedPrice}"></span>
-                        <input type="number" inputmode="decimal" min="0" step="0.01" th:field="*{estimatedPrice}" th:placeholder="#{repairs.placeholder.money}">
+                        <input type="number"
+                               inputmode="decimal"
+                               min="0"
+                               step="0.01"
+                               th:field="*{estimatedPrice}"
+                               th:placeholder="#{repairs.placeholder.money}"
+                               data-estimated-input>
                         <small th:if="${#fields.hasErrors('estimatedPrice')}" th:errors="*{estimatedPrice}"></small>
                     </label>
 
                     <label class="field">
                         <span th:text="#{repairs.field.depositPaid}"></span>
-                        <input type="number" inputmode="decimal" min="0" step="0.01" th:field="*{depositPaid}" th:placeholder="#{repairs.placeholder.money}">
+                        <input type="number"
+                               inputmode="decimal"
+                               min="0"
+                               step="0.01"
+                               th:field="*{depositPaid}"
+                               th:placeholder="#{repairs.placeholder.money}"
+                               data-paid-input>
                         <small th:if="${#fields.hasErrors('depositPaid')}" th:errors="*{depositPaid}"></small>
                     </label>
 
                     <label class="field">
                         <span th:text="#{repairs.field.remainingBalance}"></span>
-                        <input type="number" inputmode="decimal" min="0" step="0.01" th:field="*{remainingBalance}" th:placeholder="#{repairs.placeholder.money}">
+                        <input type="number"
+                               inputmode="decimal"
+                               min="0"
+                               step="0.01"
+                               th:field="*{remainingBalance}"
+                               th:placeholder="#{repairs.placeholder.money}"
+                               readonly
+                               aria-readonly="true"
+                               data-remaining-input>
+                        <em th:text="#{repairs.form.balance.auto}"></em>
                         <small th:if="${#fields.hasErrors('remainingBalance')}" th:errors="*{remainingBalance}"></small>
                     </label>
                 </div>
 
-                <div class="form-actions">
+                <div class="form-actions form-actions--sticky">
                     <a class="button button--ghost"
                        th:href="${editing}
                                 ? @{/{shopSlug}/items/{repairId}(shopSlug=${shop.slug}, repairId=${repairId})}
@@ -124,5 +172,52 @@
 
     <div th:replace="~{fragments/ui :: tenantBottomUtility(${shop})}"></div>
 </main>
+<script th:inline="javascript">
+    (() => {
+        const form = document.querySelector('[data-money-form]');
+        if (!form) {
+            return;
+        }
+
+        const estimatedInput = form.querySelector('[data-estimated-input]');
+        const paidInput = form.querySelector('[data-paid-input]');
+        const remainingInput = form.querySelector('[data-remaining-input]');
+        const imageInput = form.querySelector('[data-image-input]');
+        const imageFilename = form.querySelector('[data-image-filename]');
+        const defaultImageText = /*[[#{repairs.form.image.none}]]*/ 'No image';
+
+        const normalizeMoney = (value) => {
+            const parsed = Number.parseFloat(value || '0');
+            if (!Number.isFinite(parsed) || parsed < 0) {
+                return 0;
+            }
+            return Math.round(parsed * 100) / 100;
+        };
+
+        const updateRemainingBalance = () => {
+            const estimated = normalizeMoney(estimatedInput.value);
+            const paid = normalizeMoney(paidInput.value);
+            const remaining = Math.max(estimated - paid, 0);
+            remainingInput.value = remaining.toFixed(2);
+        };
+
+        const updateFilename = () => {
+            if (!imageFilename) {
+                return;
+            }
+            const selectedFile = imageInput?.files?.[0];
+            imageFilename.textContent = selectedFile ? selectedFile.name : imageFilename.dataset.originalName || defaultImageText;
+        };
+
+        if (imageFilename) {
+            imageFilename.dataset.originalName = imageFilename.textContent.trim();
+        }
+
+        estimatedInput?.addEventListener('input', updateRemainingBalance);
+        paidInput?.addEventListener('input', updateRemainingBalance);
+        imageInput?.addEventListener('change', updateFilename);
+        updateRemainingBalance();
+    })();
+</script>
 </body>
 </html>

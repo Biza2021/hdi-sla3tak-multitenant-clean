@@ -43,9 +43,6 @@ public class RepairItemForm {
     @Digits(integer = 10, fraction = 2, message = "{repair.money.digits}")
     private BigDecimal depositPaid = BigDecimal.ZERO;
 
-    @NotNull(message = "{repair.remainingBalance.notNull}")
-    @DecimalMin(value = "0.00", message = "{repair.money.min}")
-    @Digits(integer = 10, fraction = 2, message = "{repair.money.digits}")
     private BigDecimal remainingBalance = BigDecimal.ZERO;
 
     private MultipartFile imageFile;

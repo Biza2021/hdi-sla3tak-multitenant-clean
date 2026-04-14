@@ -22,4 +22,8 @@ public record RepairDetailView(
         CustomerOptionView customer,
         List<RepairHistoryEntryView> history
 ) {
+
+    public boolean hasOutstandingBalance() {
+        return remainingBalance != null && remainingBalance.signum() > 0;
+    }
 }

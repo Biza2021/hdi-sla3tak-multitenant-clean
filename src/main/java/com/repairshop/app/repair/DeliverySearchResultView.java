@@ -2,6 +2,7 @@ package com.repairshop.app.repair;
 
 import com.repairshop.app.media.RepairImageSummaryView;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record DeliverySearchResultView(
@@ -14,6 +15,9 @@ public record DeliverySearchResultView(
         LocalDate expectedDeliveryDate,
         String pickupCode,
         String publicTrackingToken,
+        BigDecimal estimatedPrice,
+        BigDecimal depositPaid,
+        BigDecimal remainingBalance,
         RepairImageSummaryView image
 ) {
 
@@ -23,6 +27,14 @@ public record DeliverySearchResultView(
 
     public boolean isDelivered() {
         return status.isDelivered();
+    }
+
+    public boolean hasOutstandingBalance() {
+        return remainingBalance != null && remainingBalance.signum() > 0;
+    }
+
+    public boolean canDeliverNow() {
+        return canMarkDelivered() && !hasOutstandingBalance();
     }
 
     public String displayPhone() {

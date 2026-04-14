@@ -2,6 +2,8 @@ package com.repairshop.app.web;
 
 import com.repairshop.app.communication.RepairCommunicationContext;
 import com.repairshop.app.communication.RepairCommunicationLinkService;
+import com.repairshop.app.repair.DeliveryCompletionOutcome;
+import com.repairshop.app.repair.DeliverySettlementChoice;
 import com.repairshop.app.repair.DeliverySearchResultView;
 import com.repairshop.app.repair.DeliverySearchSuggestionView;
 import com.repairshop.app.repair.RepairNotReadyForDeliveryException;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -99,18 +102,30 @@ public class DeliveryController {
             @RequestParam(name = "query", required = false) String query,
             @RequestParam(name = "pickupCode", required = false) String pickupCode,
             @RequestParam(name = "selectedRepairId", required = false) Long selectedRepairId,
+            @RequestParam(name = "settlementChoice", required = false) String settlementChoiceValue,
+            @RequestParam(name = "paymentReceivedNow", required = false) BigDecimal paymentReceivedNow,
             Authentication authentication
     ) {
         AuthenticatedShopUser principal = CurrentUser.require(authentication);
         shopService.getBySlugOrThrow(shopSlug);
         String searchQuery = firstNonBlank(query, pickupCode);
 
-        String feedback = "delivered";
+        String feedback;
         try {
-            boolean delivered = repairService.markDelivered(principal.shopId(), principal.userId(), repairId);
-            if (!delivered) {
-                feedback = "already-delivered";
-            }
+            DeliveryCompletionOutcome outcome = repairService.completeDelivery(
+                    principal.shopId(),
+                    principal.userId(),
+                    repairId,
+                    DeliverySettlementChoice.from(settlementChoiceValue),
+                    paymentReceivedNow
+            );
+            feedback = switch (outcome) {
+                case DELIVERED -> "delivered";
+                case ALREADY_DELIVERED -> "already-delivered";
+                case PARTIAL_PAYMENT_RECORDED -> "partial-recorded";
+                case PAYMENT_REQUIRED -> "payment-due";
+                case INVALID_SETTLEMENT -> "invalid-payment";
+            };
         } catch (RepairNotReadyForDeliveryException ex) {
             feedback = "not-ready";
         }
@@ -129,6 +144,9 @@ public class DeliveryController {
     private String normalizeFeedback(String deliveryFeedback) {
         if ("delivered".equals(deliveryFeedback)
                 || "already-delivered".equals(deliveryFeedback)
+                || "partial-recorded".equals(deliveryFeedback)
+                || "payment-due".equals(deliveryFeedback)
+                || "invalid-payment".equals(deliveryFeedback)
                 || "not-ready".equals(deliveryFeedback)) {
             return deliveryFeedback;
         }
