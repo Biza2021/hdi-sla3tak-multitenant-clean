@@ -12,13 +12,7 @@
         </div>
     </section>
 
-    <div class="empty-state" th:if="${customerOptions.isEmpty()}">
-        <h3 th:text="#{repairs.form.customersRequired.title}"></h3>
-        <p th:text="#{repairs.form.customersRequired.body}"></p>
-        <a class="button button--primary" th:href="@{|/${shop.slug}/customers/new|}" th:text="#{repairs.form.customersRequired.cta}"></a>
-    </div>
-
-    <section class="form-layout form-layout--single" th:if="${!customerOptions.isEmpty()}">
+    <section class="form-layout form-layout--single">
         <section class="section-card section-card--form">
             <form th:action="${editing}
                     ? @{/{shopSlug}/items/{repairId}/edit(shopSlug=${shop.slug}, repairId=${repairId})}
@@ -27,20 +21,118 @@
                   method="post"
                   enctype="multipart/form-data"
                   class="stack"
-                  data-money-form>
+                  data-money-form
+                  th:attr="data-customer-suggestions-url=@{|/${shop.slug}/items/customer-suggestions|},
+                           data-customer-quick-add-url=@{|/${shop.slug}/items/customers/quick-add|}">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                 <div class="form-grid">
-                    <label class="field">
+                    <div class="field field--full customer-picker" data-customer-picker>
                         <span th:text="#{repairs.field.customer}"></span>
-                        <select th:field="*{customerId}">
-                            <option value="" th:text="#{repairs.form.customer.placeholder}"></option>
-                            <option th:each="customerOption : ${customerOptions}"
-                                    th:value="${customerOption.id}"
-                                    th:text="${customerOption.primaryPhone != null ? customerOption.fullName + ' - ' + customerOption.primaryPhone : customerOption.fullName}"></option>
-                        </select>
+                        <input type="hidden" th:field="*{customerId}" data-customer-id>
+                        <div class="input-hint">
+                            <input type="text"
+                                   id="repair-customer-search"
+                                   autocomplete="off"
+                                   spellcheck="false"
+                                   aria-autocomplete="list"
+                                   aria-controls="repair-customer-suggestions"
+                                   aria-expanded="false"
+                                   data-customer-query
+                                   th:value="${selectedCustomer != null ? (selectedCustomer.primaryPhone != null ? selectedCustomer.fullName + ' - ' + selectedCustomer.primaryPhone : (selectedCustomer.secondaryPhone != null ? selectedCustomer.fullName + ' - ' + selectedCustomer.secondaryPhone : selectedCustomer.fullName)) : ''}"
+                                   th:placeholder="#{repairs.form.customer.search.placeholder}">
+                        </div>
+
+                        <div class="selected-customer-card"
+                             data-selected-customer
+                             th:hidden="${selectedCustomer == null}">
+                            <div class="selected-customer-card__copy">
+                                <strong data-selected-customer-name
+                                        th:text="${selectedCustomer != null ? selectedCustomer.fullName : ''}"></strong>
+                                <span data-selected-customer-phones
+                                      th:text="${selectedCustomer != null ? ((selectedCustomer.primaryPhone != null ? selectedCustomer.primaryPhone : '') + ((selectedCustomer.primaryPhone != null and selectedCustomer.secondaryPhone != null) ? ' • ' : '') + (selectedCustomer.secondaryPhone != null ? selectedCustomer.secondaryPhone : '')) : ''}"></span>
+                            </div>
+                            <button class="button button--ghost button--compact"
+                                    type="button"
+                                    data-customer-clear
+                                    th:text="#{repairs.form.customer.clear}"
+                                    th:hidden="${selectedCustomer == null}"></button>
+                        </div>
+
+                        <div class="autocomplete-panel"
+                             id="repair-customer-suggestions"
+                             hidden
+                             data-customer-suggestions></div>
+
+                        <div class="customer-picker__actions">
+                            <button class="button button--ghost button--compact"
+                                    type="button"
+                                    data-customer-quick-add-open
+                                    th:text="#{repairs.form.customer.quickAdd.open}"></button>
+                            <a class="button button--ghost button--compact"
+                               th:href="@{|/${shop.slug}/customers/new|}"
+                               th:text="#{repairs.form.customer.quickAdd.fullPage}"></a>
+                        </div>
+
                         <small th:if="${#fields.hasErrors('customerId')}" th:errors="*{customerId}"></small>
-                    </label>
+
+                        <section class="inline-quick-add"
+                                 hidden
+                                 data-customer-quick-add-panel>
+                            <div class="section-card__copy">
+                                <span class="section-kicker" th:text="#{repairs.form.customer.quickAdd.eyebrow}"></span>
+                                <h2 th:text="#{repairs.form.customer.quickAdd.title}"></h2>
+                            </div>
+                            <div class="form-grid">
+                                <label class="field">
+                                    <span th:text="#{customers.field.fullName}"></span>
+                                    <input type="text"
+                                           data-quick-customer-field="fullName"
+                                           th:placeholder="#{customers.placeholder.fullName}">
+                                    <small hidden data-quick-customer-error="fullName"></small>
+                                </label>
+
+                                <label class="field">
+                                    <span th:text="#{customers.field.primaryPhone}"></span>
+                                    <input type="text"
+                                           inputmode="tel"
+                                           data-quick-customer-field="primaryPhone"
+                                           th:placeholder="#{customers.placeholder.primaryPhone}">
+                                    <small hidden data-quick-customer-error="primaryPhone"></small>
+                                </label>
+
+                                <label class="field">
+                                    <span th:text="#{customers.field.secondaryPhone}"></span>
+                                    <input type="text"
+                                           inputmode="tel"
+                                           data-quick-customer-field="secondaryPhone"
+                                           th:placeholder="#{customers.placeholder.secondaryPhone}">
+                                    <small hidden data-quick-customer-error="secondaryPhone"></small>
+                                </label>
+
+                                <label class="field field--full">
+                                    <span th:text="#{customers.field.notes}"></span>
+                                    <textarea rows="3"
+                                              data-quick-customer-field="notes"
+                                              th:placeholder="#{customers.placeholder.notes}"></textarea>
+                                    <small hidden data-quick-customer-error="notes"></small>
+                                </label>
+                            </div>
+
+                            <div class="notice error" hidden data-quick-customer-general-error></div>
+
+                            <div class="form-actions form-actions--inline">
+                                <button class="button button--ghost"
+                                        type="button"
+                                        data-customer-quick-add-cancel
+                                        th:text="#{common.cancel}"></button>
+                                <button class="button button--primary"
+                                        type="button"
+                                        data-customer-quick-add-submit
+                                        th:text="#{repairs.form.customer.quickAdd.submit}"></button>
+                            </div>
+                        </section>
+                    </div>
 
                     <label class="field">
                         <span th:text="#{repairs.field.status}"></span>
@@ -179,12 +271,44 @@
             return;
         }
 
+        const csrfInput = form.querySelector('input[name="_csrf"], input[name="__RequestVerificationToken"], input[name="_csrf"]');
         const estimatedInput = form.querySelector('[data-estimated-input]');
         const paidInput = form.querySelector('[data-paid-input]');
         const remainingInput = form.querySelector('[data-remaining-input]');
         const imageInput = form.querySelector('[data-image-input]');
         const imageFilename = form.querySelector('[data-image-filename]');
+        const customerIdInput = form.querySelector('[data-customer-id]');
+        const customerQueryInput = form.querySelector('[data-customer-query]');
+        const customerSuggestions = form.querySelector('[data-customer-suggestions]');
+        const selectedCustomerCard = form.querySelector('[data-selected-customer]');
+        const selectedCustomerName = form.querySelector('[data-selected-customer-name]');
+        const selectedCustomerPhones = form.querySelector('[data-selected-customer-phones]');
+        const clearCustomerButton = form.querySelector('[data-customer-clear]');
+        const quickAddPanel = form.querySelector('[data-customer-quick-add-panel]');
+        const quickAddOpenButton = form.querySelector('[data-customer-quick-add-open]');
+        const quickAddCancelButton = form.querySelector('[data-customer-quick-add-cancel]');
+        const quickAddSubmitButton = form.querySelector('[data-customer-quick-add-submit]');
+        const quickAddGeneralError = form.querySelector('[data-quick-customer-general-error]');
+        const customerSuggestionsUrl = form.dataset.customerSuggestionsUrl;
+        const customerQuickAddUrl = form.dataset.customerQuickAddUrl;
         const defaultImageText = /*[[#{repairs.form.image.none}]]*/ 'No image';
+        const customerSearchLoadingText = /*[[#{repairs.form.customer.search.loading}]]*/ 'Searching...';
+        const customerSearchEmptyText = /*[[#{repairs.form.customer.search.empty}]]*/ 'No client found in this shop yet.';
+        const quickAddErrorText = /*[[#{repairs.form.customer.quickAdd.error}]]*/ 'Unable to add this client right now. Please try again.';
+        const customerNoPhoneText = /*[[#{app.notAvailable}]]*/ 'Not available';
+        let selectedCustomer = customerIdInput.value
+            ? {
+                id: customerIdInput.value,
+                fullName: selectedCustomerName?.textContent?.trim() || '',
+                primaryPhone: '',
+                secondaryPhone: '',
+                displayLabel: customerQueryInput.value.trim()
+            }
+            : null;
+        let customerAbortController = null;
+        let customerDebounceHandle = null;
+        let activeCustomerIndex = -1;
+        let currentCustomerSuggestions = [];
 
         const normalizeMoney = (value) => {
             const parsed = Number.parseFloat(value || '0');
@@ -212,6 +336,323 @@
         if (imageFilename) {
             imageFilename.dataset.originalName = imageFilename.textContent.trim();
         }
+
+        const customerDisplayLabel = (customer) => {
+            if (!customer) {
+                return '';
+            }
+            if (customer.displayLabel) {
+                return customer.displayLabel;
+            }
+            return customer.primaryPhone
+                ? `${customer.fullName} - ${customer.primaryPhone}`
+                : (customer.secondaryPhone
+                    ? `${customer.fullName} - ${customer.secondaryPhone}`
+                    : customer.fullName);
+        };
+
+        const customerPhoneLabel = (customer) => {
+            const phones = [customer.primaryPhone, customer.secondaryPhone].filter(Boolean);
+            return phones.length > 0 ? phones.join(' • ') : customerNoPhoneText;
+        };
+
+        const openCustomerSuggestions = () => {
+            customerSuggestions.hidden = false;
+            customerQueryInput.setAttribute('aria-expanded', 'true');
+        };
+
+        const closeCustomerSuggestions = () => {
+            customerSuggestions.hidden = true;
+            customerSuggestions.innerHTML = '';
+            customerQueryInput.setAttribute('aria-expanded', 'false');
+            activeCustomerIndex = -1;
+            currentCustomerSuggestions = [];
+        };
+
+        const renderCustomerState = (message) => {
+            customerSuggestions.innerHTML = '';
+            const state = document.createElement('div');
+            state.className = 'autocomplete-panel__state';
+            state.textContent = message;
+            customerSuggestions.appendChild(state);
+            openCustomerSuggestions();
+        };
+
+        const renderSelectedCustomer = (customer) => {
+            selectedCustomer = {
+                ...customer,
+                displayLabel: customerDisplayLabel(customer)
+            };
+            customerIdInput.value = customer.id;
+            customerQueryInput.value = selectedCustomer.displayLabel;
+            selectedCustomerCard.hidden = false;
+            selectedCustomerName.textContent = customer.fullName || '';
+            selectedCustomerPhones.textContent = customerPhoneLabel(customer);
+            clearCustomerButton.hidden = false;
+        };
+
+        const clearSelectedCustomer = (preserveQuery = false) => {
+            selectedCustomer = null;
+            customerIdInput.value = '';
+            selectedCustomerCard.hidden = true;
+            selectedCustomerName.textContent = '';
+            selectedCustomerPhones.textContent = '';
+            clearCustomerButton.hidden = true;
+            if (!preserveQuery) {
+                customerQueryInput.value = '';
+            }
+        };
+
+        const highlightCustomerSuggestion = () => {
+            customerSuggestions.querySelectorAll('.autocomplete-option').forEach((option, index) => {
+                option.classList.toggle('is-active', index === activeCustomerIndex);
+            });
+        };
+
+        const chooseCustomer = (customer) => {
+            renderSelectedCustomer(customer);
+            closeCustomerSuggestions();
+            quickAddPanel.hidden = true;
+            quickAddGeneralError.hidden = true;
+            resetQuickCustomerForm();
+        };
+
+        const renderCustomerSuggestions = (suggestions) => {
+            customerSuggestions.innerHTML = '';
+            currentCustomerSuggestions = suggestions;
+            activeCustomerIndex = -1;
+
+            if (suggestions.length === 0) {
+                renderCustomerState(customerSearchEmptyText);
+                return;
+            }
+
+            suggestions.forEach((customer, index) => {
+                const option = document.createElement('button');
+                option.type = 'button';
+                option.className = 'autocomplete-option';
+                option.dataset.index = String(index);
+
+                const topRow = document.createElement('div');
+                topRow.className = 'autocomplete-option__top';
+
+                const titleGroup = document.createElement('div');
+                titleGroup.className = 'autocomplete-option__title-group';
+
+                const name = document.createElement('strong');
+                name.className = 'autocomplete-option__customer';
+                name.textContent = customer.fullName;
+
+                const phones = document.createElement('span');
+                phones.className = 'autocomplete-option__phone';
+                phones.textContent = customerPhoneLabel(customer);
+
+                titleGroup.appendChild(name);
+                titleGroup.appendChild(phones);
+                topRow.appendChild(titleGroup);
+
+                option.appendChild(topRow);
+                option.addEventListener('click', () => chooseCustomer(customer));
+                customerSuggestions.appendChild(option);
+            });
+
+            openCustomerSuggestions();
+        };
+
+        const fetchCustomerSuggestions = async (value) => {
+            if (customerAbortController) {
+                customerAbortController.abort();
+            }
+
+            customerAbortController = new AbortController();
+            renderCustomerState(customerSearchLoadingText);
+
+            try {
+                const response = await fetch(`${customerSuggestionsUrl}?q=${encodeURIComponent(value)}`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    signal: customerAbortController.signal
+                });
+
+                if (!response.ok) {
+                    closeCustomerSuggestions();
+                    return;
+                }
+
+                renderCustomerSuggestions(await response.json());
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    closeCustomerSuggestions();
+                }
+            }
+        };
+
+        const quickCustomerFields = {
+            fullName: form.querySelector('[data-quick-customer-field="fullName"]'),
+            primaryPhone: form.querySelector('[data-quick-customer-field="primaryPhone"]'),
+            secondaryPhone: form.querySelector('[data-quick-customer-field="secondaryPhone"]'),
+            notes: form.querySelector('[data-quick-customer-field="notes"]')
+        };
+
+        const clearQuickCustomerErrors = () => {
+            Object.keys(quickCustomerFields).forEach((fieldName) => {
+                const errorNode = form.querySelector(`[data-quick-customer-error="${fieldName}"]`);
+                if (errorNode) {
+                    errorNode.hidden = true;
+                    errorNode.textContent = '';
+                }
+            });
+            quickAddGeneralError.hidden = true;
+            quickAddGeneralError.textContent = '';
+        };
+
+        const resetQuickCustomerForm = () => {
+            Object.values(quickCustomerFields).forEach((field) => {
+                if (field) {
+                    field.value = '';
+                }
+            });
+            clearQuickCustomerErrors();
+        };
+
+        const prefillQuickCustomerForm = () => {
+            const query = customerQueryInput.value.trim();
+            if (!query) {
+                return;
+            }
+
+            const digits = query.replace(/\D+/g, '');
+            if (digits.length >= 5 && !quickCustomerFields.primaryPhone.value) {
+                quickCustomerFields.primaryPhone.value = query;
+            } else if (!quickCustomerFields.fullName.value) {
+                quickCustomerFields.fullName.value = query;
+            }
+        };
+
+        const openQuickCustomerPanel = () => {
+            closeCustomerSuggestions();
+            quickAddPanel.hidden = false;
+            clearQuickCustomerErrors();
+            prefillQuickCustomerForm();
+            quickCustomerFields.fullName.focus();
+        };
+
+        const buildQuickCustomerPayload = () => {
+            const payload = new URLSearchParams();
+            if (csrfInput?.name && csrfInput?.value) {
+                payload.append(csrfInput.name, csrfInput.value);
+            }
+            Object.entries(quickCustomerFields).forEach(([fieldName, field]) => {
+                payload.append(fieldName, field.value);
+            });
+            return payload;
+        };
+
+        const submitQuickCustomer = async () => {
+            clearQuickCustomerErrors();
+            quickAddSubmitButton.disabled = true;
+
+            try {
+                const response = await fetch(customerQuickAddUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    },
+                    credentials: 'same-origin',
+                    body: buildQuickCustomerPayload().toString()
+                });
+
+                const payload = await response.json();
+                if (response.ok && payload.success && payload.customer) {
+                    chooseCustomer(payload.customer);
+                    return;
+                }
+
+                const errors = payload.errors || {};
+                let hasFieldError = false;
+                Object.entries(errors).forEach(([fieldName, message]) => {
+                    const errorNode = form.querySelector(`[data-quick-customer-error="${fieldName}"]`);
+                    if (errorNode) {
+                        errorNode.hidden = false;
+                        errorNode.textContent = message;
+                        hasFieldError = true;
+                    }
+                });
+
+                if (!hasFieldError) {
+                    quickAddGeneralError.hidden = false;
+                    quickAddGeneralError.textContent = errors.general || quickAddErrorText;
+                }
+            } catch (error) {
+                quickAddGeneralError.hidden = false;
+                quickAddGeneralError.textContent = quickAddErrorText;
+            } finally {
+                quickAddSubmitButton.disabled = false;
+            }
+        };
+
+        customerQueryInput?.addEventListener('input', () => {
+            if (selectedCustomer && customerQueryInput.value.trim() !== customerDisplayLabel(selectedCustomer)) {
+                clearSelectedCustomer(true);
+            }
+
+            if (customerDebounceHandle) {
+                window.clearTimeout(customerDebounceHandle);
+            }
+
+            const query = customerQueryInput.value.trim();
+            if (query.length < 2) {
+                closeCustomerSuggestions();
+                return;
+            }
+
+            customerDebounceHandle = window.setTimeout(() => {
+                fetchCustomerSuggestions(query);
+            }, 160);
+        });
+
+        customerQueryInput?.addEventListener('keydown', (event) => {
+            if (customerSuggestions.hidden || currentCustomerSuggestions.length === 0) {
+                return;
+            }
+
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                activeCustomerIndex = (activeCustomerIndex + 1) % currentCustomerSuggestions.length;
+                highlightCustomerSuggestion();
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                activeCustomerIndex = (activeCustomerIndex - 1 + currentCustomerSuggestions.length) % currentCustomerSuggestions.length;
+                highlightCustomerSuggestion();
+            } else if (event.key === 'Enter' && activeCustomerIndex >= 0) {
+                event.preventDefault();
+                chooseCustomer(currentCustomerSuggestions[activeCustomerIndex]);
+            } else if (event.key === 'Escape') {
+                closeCustomerSuggestions();
+            }
+        });
+
+        clearCustomerButton?.addEventListener('click', () => {
+            clearSelectedCustomer();
+            customerQueryInput.focus();
+        });
+
+        quickAddOpenButton?.addEventListener('click', openQuickCustomerPanel);
+        quickAddCancelButton?.addEventListener('click', () => {
+            quickAddPanel.hidden = true;
+            resetQuickCustomerForm();
+            customerQueryInput.focus();
+        });
+        quickAddSubmitButton?.addEventListener('click', submitQuickCustomer);
+
+        document.addEventListener('click', (event) => {
+            if (!form.contains(event.target) || !event.target.closest('[data-customer-picker]')) {
+                closeCustomerSuggestions();
+            }
+        });
 
         estimatedInput?.addEventListener('input', updateRemainingBalance);
         paidInput?.addEventListener('input', updateRemainingBalance);

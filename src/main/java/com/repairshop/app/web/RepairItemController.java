@@ -2,8 +2,12 @@ package com.repairshop.app.web;
 
 import com.repairshop.app.communication.RepairCommunicationContext;
 import com.repairshop.app.communication.RepairCommunicationLinkService;
+import com.repairshop.app.customer.CustomerService;
 import com.repairshop.app.customer.CustomerNotFoundException;
+import com.repairshop.app.customer.DuplicateCustomerPhoneException;
+import com.repairshop.app.customer.QuickAddCustomerResponse;
 import com.repairshop.app.media.InvalidRepairImageException;
+import com.repairshop.app.repair.CustomerOptionView;
 import com.repairshop.app.repair.RepairDetailView;
 import com.repairshop.app.repair.RepairFormValidationException;
 import com.repairshop.app.repair.RepairItemStatus;
@@ -12,36 +16,52 @@ import com.repairshop.app.security.AuthenticatedShopUser;
 import com.repairshop.app.security.CurrentUser;
 import com.repairshop.app.shop.Shop;
 import com.repairshop.app.shop.ShopService;
+import com.repairshop.app.web.form.CustomerForm;
 import com.repairshop.app.web.form.RepairItemForm;
 import jakarta.validation.Valid;
+import org.springframework.context.MessageSource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.FieldError;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 
 @Controller
 public class RepairItemController {
 
     private final ShopService shopService;
     private final RepairService repairService;
+    private final CustomerService customerService;
     private final RepairCommunicationLinkService repairCommunicationLinkService;
+    private final MessageSource messageSource;
 
     public RepairItemController(
             ShopService shopService,
             RepairService repairService,
-            RepairCommunicationLinkService repairCommunicationLinkService
+            CustomerService customerService,
+            RepairCommunicationLinkService repairCommunicationLinkService,
+            MessageSource messageSource
     ) {
         this.shopService = shopService;
         this.repairService = repairService;
+        this.customerService = customerService;
         this.repairCommunicationLinkService = repairCommunicationLinkService;
+        this.messageSource = messageSource;
     }
 
     @GetMapping("/{shopSlug}/items")
@@ -100,6 +120,44 @@ public class RepairItemController {
         model.addAttribute("shop", shop);
         populateRepairFormModel(model, principal.shopId(), false, null);
         return "repairs/form";
+    }
+
+    @GetMapping(value = "/{shopSlug}/items/customer-suggestions", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public java.util.List<CustomerOptionView> customerSuggestions(
+            @PathVariable String shopSlug,
+            @RequestParam(name = "q", required = false) String query,
+            Authentication authentication
+    ) {
+        AuthenticatedShopUser principal = CurrentUser.require(authentication);
+        shopService.getBySlugOrThrow(shopSlug);
+        return customerService.suggestForRepairPicker(principal.shopId(), query);
+    }
+
+    @PostMapping(value = "/{shopSlug}/items/customers/quick-add", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<QuickAddCustomerResponse> quickAddCustomer(
+            @PathVariable String shopSlug,
+            Authentication authentication,
+            @Valid @ModelAttribute CustomerForm customerForm,
+            BindingResult bindingResult,
+            Locale locale
+    ) {
+        AuthenticatedShopUser principal = CurrentUser.require(authentication);
+        shopService.getBySlugOrThrow(shopSlug);
+
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(QuickAddCustomerResponse.failure(validationErrors(bindingResult, locale)));
+        }
+
+        try {
+            CustomerOptionView customer = customerService.createQuickForRepair(principal.shopId(), customerForm);
+            return ResponseEntity.status(HttpStatus.CREATED).body(QuickAddCustomerResponse.success(customer));
+        } catch (DuplicateCustomerPhoneException ex) {
+            return ResponseEntity.badRequest().body(QuickAddCustomerResponse.failure(
+                    Map.of("primaryPhone", messageSource.getMessage("customer.primaryPhone.duplicate", null, locale))
+            ));
+        }
     }
 
     @GetMapping("/{shopSlug}/items/{repairId}")
@@ -202,10 +260,13 @@ public class RepairItemController {
             boolean editing,
             Long repairId
     ) {
+        RepairItemForm form = (RepairItemForm) model.asMap().get("repairItemForm");
+        Long selectedCustomerId = form != null ? form.getCustomerId() : null;
+
         model.addAttribute("editing", editing);
-        model.addAttribute("customerOptions", repairService.listCustomerOptions(shopId));
         model.addAttribute("repairStatuses", RepairItemStatus.values());
         model.addAttribute("repairId", repairId);
+        model.addAttribute("selectedCustomer", customerService.findOption(shopId, selectedCustomerId).orElse(null));
         model.addAttribute("existingImage", repairId != null
                 ? repairService.findImageSummary(shopId, repairId).orElse(null)
                 : null);
@@ -217,6 +278,14 @@ public class RepairItemController {
 
     private void syncComputedRemainingBalance(RepairItemForm form) {
         form.setRemainingBalance(repairService.previewRemainingBalance(form.getEstimatedPrice(), form.getDepositPaid()));
+    }
+
+    private Map<String, String> validationErrors(BindingResult bindingResult, Locale locale) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (FieldError fieldError : bindingResult.getFieldErrors()) {
+            errors.putIfAbsent(fieldError.getField(), messageSource.getMessage(fieldError, locale));
+        }
+        return errors;
     }
 
     private RepairCommunicationContext buildCommunicationContext(Shop shop, RepairDetailView repair) {

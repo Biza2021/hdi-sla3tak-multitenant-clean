@@ -1,16 +1,22 @@
 package com.repairshop.app.customer;
 
+import com.repairshop.app.repair.CustomerOptionView;
 import com.repairshop.app.repair.RepairItemRepository;
 import com.repairshop.app.shop.ShopRepository;
 import com.repairshop.app.web.form.CustomerForm;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 @Service
 public class CustomerService {
+
+    private static final int REPAIR_PICKER_LIMIT = 8;
 
     private final CustomerRepository customerRepository;
     private final RepairItemRepository repairItemRepository;
@@ -74,6 +80,34 @@ public class CustomerService {
         return form;
     }
 
+    @Transactional(readOnly = true)
+    public Optional<CustomerOptionView> findOption(Long shopId, Long customerId) {
+        if (customerId == null) {
+            return Optional.empty();
+        }
+
+        return customerRepository.findByIdAndShopId(customerId, shopId)
+                .map(this::toOptionView);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CustomerOptionView> suggestForRepairPicker(Long shopId, String query) {
+        SearchTerm searchTerm = SearchTerm.from(query);
+        if (searchTerm == null || searchTerm.rawQuery().length() < 2) {
+            return List.of();
+        }
+
+        return customerRepository.searchRepairPickerMatches(
+                        shopId,
+                        searchTerm.lowerQuery(),
+                        searchTerm.digitsQuery(),
+                        searchTerm.phoneSearch(),
+                        PageRequest.of(0, REPAIR_PICKER_LIMIT)
+                ).stream()
+                .map(this::toOptionView)
+                .toList();
+    }
+
     @Transactional
     public Long create(Long shopId, CustomerForm form) {
         String primaryPhone = normalizeNullable(form.getPrimaryPhone());
@@ -92,6 +126,13 @@ public class CustomerService {
         validatePrimaryPhone(shopId, primaryPhone, customerId);
         applyForm(customer, form, primaryPhone);
         persistCustomer(customer, primaryPhone);
+    }
+
+    @Transactional
+    public CustomerOptionView createQuickForRepair(Long shopId, CustomerForm form) {
+        Long customerId = create(shopId, form);
+        return findOption(shopId, customerId)
+                .orElseThrow(() -> new CustomerNotFoundException(customerId));
     }
 
     private Customer getCustomerEntity(Long shopId, Long customerId) {
@@ -120,6 +161,15 @@ public class CustomerService {
         customer.setNotes(normalizeNullable(form.getNotes()));
     }
 
+    private CustomerOptionView toOptionView(Customer customer) {
+        return new CustomerOptionView(
+                customer.getId(),
+                customer.getFullName(),
+                customer.getPrimaryPhone(),
+                customer.getSecondaryPhone()
+        );
+    }
+
     private Customer persistCustomer(Customer customer, String primaryPhone) {
         try {
             return customerRepository.saveAndFlush(customer);
@@ -141,5 +191,32 @@ public class CustomerService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private record SearchTerm(
+            String rawQuery,
+            String lowerQuery,
+            String digitsQuery,
+            boolean phoneSearch
+    ) {
+
+        private static SearchTerm from(String query) {
+            if (query == null) {
+                return null;
+            }
+
+            String trimmed = query.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+
+            String digits = trimmed.replaceAll("\\D+", "");
+            return new SearchTerm(
+                    trimmed,
+                    trimmed.toLowerCase(Locale.ROOT),
+                    digits,
+                    !digits.isEmpty()
+            );
+        }
     }
 }

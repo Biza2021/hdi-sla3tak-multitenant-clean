@@ -940,6 +940,54 @@ html[dir="rtl"] .side-note-card h2 {
     font-weight: 700;
 }
 
+.customer-picker {
+    position: relative;
+}
+
+.customer-picker__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.selected-customer-card,
+.inline-quick-add {
+    display: grid;
+    gap: 0.8rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid rgba(26, 36, 52, 0.08);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.74);
+}
+
+.selected-customer-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+}
+
+.selected-customer-card__copy {
+    display: grid;
+    gap: 0.22rem;
+}
+
+.selected-customer-card__copy strong {
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.selected-customer-card__copy span {
+    color: var(--muted);
+    font-size: 0.84rem;
+    line-height: 1.55;
+}
+
+.inline-quick-add {
+    gap: 1rem;
+    background: rgba(248, 245, 239, 0.92);
+}
+
 .entity-row__meta {
     grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
@@ -1653,7 +1701,8 @@ html[dir="rtl"] .modal-card h2 {
     .entity-row__actions .button,
     .empty-state__actions .button,
     .communication-actions .button,
-    .modal-card__actions .button {
+    .modal-card__actions .button,
+    .customer-picker__actions .button {
         flex: 1 1 100%;
     }
 
@@ -1715,7 +1764,8 @@ html[dir="rtl"] .modal-card h2 {
     }
 
     .compact-upload__current,
-    .compact-upload__actions {
+    .compact-upload__actions,
+    .selected-customer-card {
         align-items: flex-start;
         flex-direction: column;
     }

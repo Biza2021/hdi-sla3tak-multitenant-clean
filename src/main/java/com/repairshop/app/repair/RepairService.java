@@ -74,18 +74,6 @@ public class RepairService {
     }
 
     @Transactional(readOnly = true)
-    public List<CustomerOptionView> listCustomerOptions(Long shopId) {
-        return customerRepository.findAllByShopIdOrderByFullNameAsc(shopId).stream()
-                .map(customer -> new CustomerOptionView(
-                        customer.getId(),
-                        customer.getFullName(),
-                        customer.getPrimaryPhone(),
-                        customer.getSecondaryPhone()
-                ))
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public RepairDetailView getDetail(Long shopId, Long repairId) {
         RepairItem item = getDetailedRepair(shopId, repairId);
         RepairImageSummaryView image = repairImageStorageService.findSummary(shopId, repairId).orElse(null);
